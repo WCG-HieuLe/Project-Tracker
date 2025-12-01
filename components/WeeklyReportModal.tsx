@@ -98,28 +98,42 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
             throw new Error("Selected assignee not found.");
         }
 
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        const normalizeId = (id: string | undefined | null) => id ? id.toLowerCase().trim() : '';
+        const targetAssigneeId = normalizeId(assigneeId);
 
         // 1. Filter Completed Tasks (within date range)
         const completedTasks = allTasks.filter(task => {
-            if (task.assigneeId !== assigneeId || task.status !== 'Completed') {
+            if (normalizeId(task.assigneeId) !== targetAssigneeId) {
                 return false;
             }
-            const taskEnd = task.endDateRaw ? new Date(task.endDateRaw) : null;
-            if (!taskEnd) {
+            if (task.status !== 'Completed') {
                 return false;
             }
-            return taskEnd >= start && taskEnd <= end;
+            
+            // Check date validity
+            if (!task.endDateRaw) {
+                return false;
+            }
+            const taskDate = new Date(task.endDateRaw);
+            if (isNaN(taskDate.getTime())) {
+                return false;
+            }
+
+            // Robust Date Comparison: Compare YYYY-MM-DD strings
+            // This avoids issues where time-of-day offsets might exclude a valid date.
+            const year = taskDate.getFullYear();
+            const month = String(taskDate.getMonth() + 1).padStart(2, '0');
+            const day = String(taskDate.getDate()).padStart(2, '0');
+            const taskDateStr = `${year}-${month}-${day}`;
+
+            return taskDateStr >= startDate && taskDateStr <= endDate;
         });
 
         // 2. Filter Upcoming/Ongoing Tasks (for "Plan for next week")
         // Logic: Tasks assigned to user that are NOT Completed, Cancelled, or Unknown.
         const planningTasks = allTasks.filter(task => {
             return (
-                task.assigneeId === assigneeId && 
+                normalizeId(task.assigneeId) === targetAssigneeId && 
                 ['In Progress', 'To Do', 'Review', 'Pending'].includes(task.status)
             );
         });
@@ -132,7 +146,7 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
         });
 
         if (sortedCompletedTasks.length === 0 && planningTasks.length === 0) {
-            setReportContent("<h1>BÁO CÁO CÔNG VIỆC TUẦN</h1><div class='report-meta'><p>Không tìm thấy dữ liệu công việc (hoàn thành hoặc đang thực hiện) cho nhân sự này trong khoảng thời gian đã chọn.</p></div>");
+            setReportContent(`<h1>BÁO CÁO CÔNG VIỆC TUẦN</h1><div class='report-meta'><p>Không tìm thấy dữ liệu công việc (hoàn thành hoặc đang thực hiện) cho nhân sự <strong>${selectedAssignee.name}</strong> trong khoảng thời gian <strong>${formatDate(startDate)} đến ${formatDate(endDate)}</strong>.</p><p>Vui lòng kiểm tra lại bộ lọc hoặc đảm bảo công việc đã được gán đúng người và cập nhật trạng thái/ngày tháng.</p></div>`);
             setIsLoading(false);
             setGenerationCount(prev => prev + 1);
             return;
