@@ -1,143 +1,194 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Custom styles for rendering Dataverse Rich Text Editor content */
-      .ck-content {
-        color: #cbd5e1; /* slate-300 */
-        line-height: 1.5; /* Tighter line spacing */
-        font-size: 14px;
-      }
-      .ck-content p {
-        margin-bottom: 0.75rem;
-      }
-      /* Reset margins for paragraphs inside list items, a common CKEditor pattern */
-      .ck-content li > p {
-        margin: 0;
-      }
-      .ck-content ul, .ck-content ol {
-        padding-left: 1.5rem;
-        margin-bottom: 1rem;
-      }
-      .ck-content ul {
-        list-style-type: disc;
-      }
-      /* Style for nested lists */
-      .ck-content ul ul {
-        list-style-type: circle;
-        margin-top: 0.25rem;
-        margin-bottom: 0.5rem;
-      }
-      .ck-content ol {
-        list-style-type: decimal;
-      }
-      .ck-content li {
-        margin-bottom: 0.5rem; /* Consistent spacing between list items */
-      }
-      .ck-content a {
-        color: #22d3ee; /* cyan-400 */
-        text-decoration: underline;
-      }
-      .ck-content a:hover {
-        color: #67e8f9; /* cyan-300 */
-      }
-      .ck-content strong, .ck-content b {
-        color: #f1f5f9; /* slate-100 */
-        font-weight: 600;
-      }
-      .ck-content em, .ck-content i {
-        font-style: italic;
-      }
-      /* Style highlighted text to look like badges */
-      .ck-content span[style*="background-color"] {
-        padding: 2px 6px;
-        border-radius: 4px;
-        /* Let inline styles for color and background-color take precedence */
-      }
-      /* Ensure images are responsive and styled nicely */
-      .ck-content img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 0.5rem;
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-      }
 
-      /* Custom styles for the AI-generated Weekly Report */
-      .report-content {
-        color: #e2e8f0; /* slate-200 */
-        font-size: 14px;
-        line-height: 1.6;
-      }
-      .report-content h1 {
-        font-size: 1.5rem; /* 24px */
-        font-weight: 700;
-        text-align: left;
-        margin-bottom: 1rem;
-        color: #f1f5f9; /* slate-100 */
-        text-transform: uppercase;
-      }
-      .report-content .report-meta {
-        text-align: left;
-        margin-bottom: 1.5rem;
-        color: #94a3b8; /* slate-400 */
-      }
-       .report-content .report-meta p {
-        margin: 0.25rem 0;
-        font-size: 0.9rem;
-      }
-      .report-content h2 {
-        font-size: 1.125rem; /* 18px */
-        font-weight: 600;
-        color: #f1f5f9; /* slate-100 */
-        margin-top: 2rem;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #475569; /* slate-600 */
-      }
-      .report-content ul {
-        list-style-position: inside;
-        list-style-type: disc;
-        padding-left: 0.5rem;
-        margin-bottom: 1rem;
-      }
-      .report-content li {
-        margin-bottom: 0.5rem;
-      }
-      .report-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-      }
-      .report-content th, .report-content td {
-        border: 1px solid #475569; /* slate-600 */
-        padding: 0.75rem;
-        text-align: left;
-        vertical-align: top;
-      }
-      .report-content th {
-        background-color: #334155; /* slate-700 */
-        font-weight: 600;
-        color: #f1f5f9; /* slate-100 */
-      }
-       .report-content td ul {
-        margin: 0;
-        padding-left: 1rem;
-      }
-      .report-content td li {
-        margin-bottom: 0.25rem;
-      }
-      .report-content hr {
-        border-top: 1px solid #475569; /* slate-600 */
-        margin: 1.5rem 0;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Base font size */
+    body {
+      font-size: 12px;
+    }
 
-    </style>
+    /* Custom styles for rendering Dataverse Rich Text Editor content */
+    .ck-content {
+      color: #cbd5e1;
+      /* slate-300 */
+      line-height: 1.5;
+      /* Tighter line spacing */
+      font-size: 12px;
+    }
+
+    .ck-content p {
+      margin-bottom: 0.75rem;
+    }
+
+    /* Reset margins for paragraphs inside list items, a common CKEditor pattern */
+    .ck-content li>p {
+      margin: 0;
+    }
+
+    .ck-content ul,
+    .ck-content ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .ck-content ul {
+      list-style-type: disc;
+    }
+
+    /* Style for nested lists */
+    .ck-content ul ul {
+      list-style-type: circle;
+      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .ck-content ol {
+      list-style-type: decimal;
+    }
+
+    .ck-content li {
+      margin-bottom: 0.5rem;
+      /* Consistent spacing between list items */
+    }
+
+    .ck-content a {
+      color: #22d3ee;
+      /* cyan-400 */
+      text-decoration: underline;
+    }
+
+    .ck-content a:hover {
+      color: #67e8f9;
+      /* cyan-300 */
+    }
+
+    .ck-content strong,
+    .ck-content b {
+      color: #f1f5f9;
+      /* slate-100 */
+      font-weight: 600;
+    }
+
+    .ck-content em,
+    .ck-content i {
+      font-style: italic;
+    }
+
+    /* Style highlighted text to look like badges */
+    .ck-content span[style*="background-color"] {
+      padding: 2px 6px;
+      border-radius: 4px;
+      /* Let inline styles for color and background-color take precedence */
+    }
+
+    /* Ensure images are responsive and styled nicely */
+    .ck-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Custom styles for the AI-generated Weekly Report */
+    .report-content {
+      color: #e2e8f0;
+      /* slate-200 */
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .report-content h1 {
+      font-size: 1.5rem;
+      /* 24px */
+      font-weight: 700;
+      text-align: left;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      /* slate-100 */
+      text-transform: uppercase;
+    }
+
+    .report-content .report-meta {
+      text-align: left;
+      margin-bottom: 1.5rem;
+      color: #94a3b8;
+      /* slate-400 */
+    }
+
+    .report-content .report-meta p {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+    }
+
+    .report-content h2 {
+      font-size: 1.125rem;
+      /* 18px */
+      font-weight: 600;
+      color: #f1f5f9;
+      /* slate-100 */
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #475569;
+      /* slate-600 */
+    }
+
+    .report-content ul {
+      list-style-position: inside;
+      list-style-type: disc;
+      padding-left: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .report-content li {
+      margin-bottom: 0.5rem;
+    }
+
+    .report-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .report-content th,
+    .report-content td {
+      border: 1px solid #475569;
+      /* slate-600 */
+      padding: 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .report-content th {
+      background-color: #334155;
+      /* slate-700 */
+      font-weight: 600;
+      color: #f1f5f9;
+      /* slate-100 */
+    }
+
+    .report-content td ul {
+      margin: 0;
+      padding-left: 1rem;
+    }
+
+    .report-content td li {
+      margin-bottom: 0.25rem;
+    }
+
+    .report-content hr {
+      border-top: 1px solid #475569;
+      /* slate-600 */
+      margin: 1.5rem 0;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -149,8 +200,10 @@
 }
 </script>
 </head>
-  <body class="bg-slate-900">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body class="bg-slate-900">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>
