@@ -261,7 +261,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                     type="button"
                                     onClick={() => toggleTechGroup(groupName)}
                                     className="w-full flex justify-between items-center py-3 px-2 text-left text-sm font-medium text-slate-200 hover:bg-slate-700/50 rounded-md transition-colors"
-                                    aria-expanded={isExpanded}
+                                    aria-expanded={isExpanded ? "true" : "false"}
                                 >
                                     <span>{groupName} <span className="text-slate-400">({resources.length})</span></span>
                                     <svg className={`h-5 w-5 transform transition-transform text-slate-400 ${isExpanded ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
