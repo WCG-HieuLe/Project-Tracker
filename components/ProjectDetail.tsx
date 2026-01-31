@@ -258,6 +258,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                         return (
                             <div key={groupName} className="border-b border-slate-700 last:border-b-0">
                                 <button
+                                    type="button"
                                     onClick={() => toggleTechGroup(groupName)}
                                     className="w-full flex justify-between items-center py-3 px-2 text-left text-sm font-medium text-slate-200 hover:bg-slate-700/50 rounded-md transition-colors"
                                     aria-expanded={isExpanded}
