@@ -22,7 +22,7 @@ const USER_DEPARTMENT_MAP: { [userId: string]: number } = {
   '12b2dda8-e49f-ef11-8a69-000d3ac8d88c': 191920002, // Thông Cao Văn -> Logistics
   '106ab015-d788-ee11-be36-000d3aa3f53e': 191920001, // Hoàng Nguyễn Minh -> Procument
   'dced0234-5bb0-ef11-b8e8-000d3ac7ae9c': 191920001, // Nghĩa Phan Trọng -> Procument
-  '654a811b-7a8f-f011-b4cc-0022485a6354': 191920003, // Lê Văn Thơ -> Finance
+  'fe694d73-5bec-f011-8406-7ced8db4f488': 191920006, // Trần Tấn Phát -> General
 };
 
 const LOGISTICS_DEP_ID = 191920002;
