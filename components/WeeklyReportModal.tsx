@@ -50,9 +50,22 @@ const EditableReportContent: React.FC<{ initialContent: string; onChange: (html:
 };
 
 const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productMembers, accessToken, loggedInUser }) => {
+    // Helper to format date as YYYY-MM-DD
+    const toDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Default date range: today and 7 days ago
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
     const [assigneeId, setAssigneeId] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(toDateString(sevenDaysAgo));
+    const [endDate, setEndDate] = useState(toDateString(today));
     const [department, setDepartment] = useState('R&D');
 
     const [isLoading, setIsLoading] = useState(false);
@@ -62,10 +75,11 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
 
     const [viewMode, setViewMode] = useState<'Visual' | 'Source'>('Visual');
     const [generationCount, setGenerationCount] = useState(0);
+    const [customPrompt, setCustomPrompt] = useState<string>('');
 
     // Auto-select assignee based on logged-in user name
     useEffect(() => {
-        if (loggedInUser && !assigneeId) {
+        if (loggedInUser && productMembers.length > 0 && !assigneeId) {
             // Find product member with same name.
             // Dataverse name might contain department (e.g., "Name_Department")
             // Logged-in name is usually just "Name".
@@ -74,7 +88,10 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
                 loggedInUser.name.toLowerCase().includes(pm.name.toLowerCase())
             );
             if (match) {
+                console.log('Auto-selected:', match.name);
                 setAssigneeId(match.id);
+            } else {
+                console.log('No match for:', loggedInUser.name, productMembers.map(m => m.name));
             }
         }
     }, [loggedInUser, productMembers, assigneeId]);
@@ -90,6 +107,60 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [onClose]);
+
+    // Generate default prompt based on selected parameters
+    const generateDefaultPrompt = useCallback(() => {
+        const selectedAssignee = productMembers.find(pm => pm.id === assigneeId);
+        const assigneeName = selectedAssignee?.name?.split('_')[0] || selectedAssignee?.name || '[Chưa chọn]';
+        const reportTime = startDate && endDate ? `${formatDate(startDate)} – ${formatDate(endDate)}` : '[Chưa chọn]';
+
+        return `Bạn là một trợ lý quản lý dự án chuyên nghiệp. Hãy tạo một "BÁO CÁO CÔNG VIỆC TUẦN" bằng tiếng Việt dựa trên dữ liệu JSON được cung cấp.
+
+**Thông tin chung:**
+- Người thực hiện: ${assigneeName}
+- Thời gian báo cáo: ${reportTime}
+- Phòng ban: ${department}
+
+**YÊU CẦU ĐỊNH DẠNG (HTML thuần túy, KHÔNG Markdown, KHÔNG thẻ <html>/<body>):**
+
+Bắt đầu báo cáo với:
+\`<h1>BÁO CÁO CÔNG VIỆC TUẦN</h1>\`
+\`<div class="report-meta"><p><strong>Người thực hiện:</strong> ${assigneeName}</p><p><strong>Thời gian:</strong> ${reportTime}</p><p><strong>Phòng ban:</strong> ${department}</p></div>\`
+
+Sau đó, hãy tạo chính xác 3 phần sau đây:
+
+**Phần 1: Tổng kết các công việc đã hoàn thành**
+- Sử dụng thẻ \`<h2>1. Tổng kết các công việc đã hoàn thành</h2>\`.
+- Dưới đó, viết một danh sách \`<ul>\` tóm tắt ngắn gọn những kết quả chính đạt được từ danh sách công việc đã hoàn thành. Viết văn phong tích cực.
+
+**Phần 2: Chi tiết**
+- Sử dụng thẻ \`<h2>2. Chi tiết</h2>\`.
+- Tạo một bảng \`<table style="border-collapse: collapse; width: 100%;">\` với các ô có border.
+- Các cột bảng (\`<thead>\`): "Quy trình / Dự án", "Công việc hoàn thành", "Khó khăn", "Kế hoạch tiếp theo".
+
+**QUY TẮC TRÌNH BÀY BẢNG:**
+1. **Gom nhóm theo Dự Án:** Mỗi Dự án / Quy trình chỉ hiển thị trên **một hàng (row)** duy nhất trong bảng.
+2. **Cột "Công việc hoàn thành":** Liệt kê TẤT CẢ tên các công việc (Task Name) thuộc dự án đó vào trong cùng một ô. 
+   - Bắt buộc sử dụng thẻ danh sách \`<ul>\` với các mục \`<li>\` cho từng công việc để tạo danh sách gạch đầu dòng.
+3. **Cột "Khó khăn":** Nếu mô tả công việc có đề cập đến khó khăn hoặc vướng mắc, hãy tóm tắt ngắn gọn.
+   - Trình bày dạng gạch đầu dòng (\`<ul><li>...</li></ul>\`) nếu có nhiều ý.
+   - **KHÔNG được tự suy luận hoặc bịa đặt** nếu mô tả không đề cập.
+   - Nếu không có thông tin về khó khăn trong mô tả, ghi "Chưa có".
+4. **Cột "Kế hoạch tiếp theo":** Đưa ra kế hoạch tiếp theo chung cho dự án đó.
+   - Trình bày dạng gạch đầu dòng (\`<ul><li>...</li></ul>\`) nếu có nhiều ý.
+
+**Phần 3: Kế hoạch tuần tới**
+- Sử dụng thẻ \`<h2>3. Kế hoạch tuần tới</h2>\`.
+- Dựa vào dữ liệu "Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH", hãy viết một đoạn văn (hoặc 1-2 câu) mô tả chung, tổng quát về trọng tâm công việc tuần tới.
+- **KHÔNG** liệt kê chi tiết từng đầu việc (không dùng danh sách ul/li cho phần này). Chỉ mô tả định hướng chung.
+
+**Lưu ý:** Chỉ trả về mã HTML để render bên trong thẻ body.`;
+    }, [assigneeId, startDate, endDate, department, productMembers]);
+
+    // Update prompt when parameters change
+    useEffect(() => {
+        setCustomPrompt(generateDefaultPrompt());
+    }, [generateDefaultPrompt]);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -198,56 +269,16 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
             const reportTime = `${formatDate(startDate)} – ${formatDate(endDate)}`;
             const assigneeName = selectedAssignee.name?.split('_')[0] || selectedAssignee.name || 'N/A';
 
-            const prompt = `
-            Bạn là một trợ lý quản lý dự án chuyên nghiệp. Hãy tạo một "BÁO CÁO CÔNG VIỆC TUẦN" bằng tiếng Việt dựa trên dữ liệu JSON dưới đây.
+            // Build the full prompt with data context + user's custom prompt
+            const dataContext = `
+**Dữ liệu đầu vào:**
+1. Danh sách công việc ĐÃ HOÀN THÀNH trong tuần:
+${JSON.stringify(formattedCompleted)}
 
-            **Dữ liệu đầu vào:**
-            1. Danh sách công việc ĐÃ HOÀN THÀNH trong tuần:
-            ${JSON.stringify(formattedCompleted)}
-
-            2. Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH (cho tuần tới):
-            ${JSON.stringify(formattedPlanning)}
-
-            **Thông tin chung:**
-            - Người thực hiện: ${assigneeName}
-            - Thời gian báo cáo: ${reportTime}
-            - Phòng ban: ${department}
-
-            **YÊU CẦU ĐỊNH DẠNG (HTML thuần túy, KHÔNG Markdown, KHÔNG thẻ <html>/<body>):**
-            
-            Bắt đầu báo cáo với:
-            \`<h1>BÁO CÁO CÔNG VIỆC TUẦN</h1>\`
-            \`<div class="report-meta"><p><strong>Người thực hiện:</strong> ${assigneeName}</p><p><strong>Thời gian:</strong> ${reportTime}</p><p><strong>Phòng ban:</strong> ${department}</p></div>\`
-
-            Sau đó, hãy tạo chính xác 3 phần sau đây:
-
-            **Phần 1: Tổng kết các công việc đã hoàn thành**
-            - Sử dụng thẻ \`<h2>1. Tổng kết các công việc đã hoàn thành</h2>\`.
-            - Dưới đó, viết một danh sách \`<ul>\` tóm tắt ngắn gọn những kết quả chính đạt được từ danh sách công việc đã hoàn thành. Viết văn phong tích cực.
-
-            **Phần 2: Chi tiết**
-            - Sử dụng thẻ \`<h2>2. Chi tiết</h2>\`.
-            - Tạo một bảng \`<table>\` có border.
-            - Các cột bảng (\`<thead>\`): "Quy trình / Dự án", "Công việc hoàn thành", "Khó khăn", "Kế hoạch tiếp theo".
-            
-            **QUY TẮC TRÌNH BÀY BẢNG:**
-            1. **Gom nhóm theo Dự Án:** Mỗi Dự án / Quy trình chỉ hiển thị trên **một hàng (row)** duy nhất trong bảng.
-            2. **Cột "Công việc hoàn thành":** Liệt kê TẤT CẢ tên các công việc (Task Name) thuộc dự án đó vào trong cùng một ô. 
-               - Bắt buộc sử dụng thẻ danh sách \`<ul>\` với các mục \`<li>\` cho từng công việc để tạo danh sách gạch đầu dòng.
-            3. **Cột "Khó khăn":** Dựa trên mô tả công việc, hãy suy luận và tóm tắt các khó khăn/vướng mắc chung của dự án.
-               - Trình bày dạng gạch đầu dòng (\`<ul><li>...</li></ul>\`) nếu có nhiều ý.
-               - Mô tả ngắn gọn, không quá chi tiết.
-               - Nếu không có khó khăn, ghi "Không có".
-            4. **Cột "Kế hoạch tiếp theo":** Đưa ra kế hoạch tiếp theo chung cho dự án đó.
-               - Trình bày dạng gạch đầu dòng (\`<ul><li>...</li></ul>\`) nếu có nhiều ý.
-
-            **Phần 3: Kế hoạch tuần tới**
-            - Sử dụng thẻ \`<h2>3. Kế hoạch tuần tới</h2>\`.
-            - Dựa vào dữ liệu "Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH", hãy viết một đoạn văn (hoặc 1-2 câu) mô tả chung, tổng quát về trọng tâm công việc tuần tới.
-            - **KHÔNG** liệt kê chi tiết từng đầu việc (không dùng danh sách ul/li cho phần này). Chỉ mô tả định hướng chung.
-
-            **Lưu ý:** Chỉ trả về mã HTML để render bên trong thẻ body.
-        `;
+2. Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH (cho tuần tới):
+${JSON.stringify(formattedPlanning)}
+`;
+            const prompt = dataContext + '\n' + customPrompt;
 
             // Call Azure OpenAI API
             const response = await fetch(AZURE_OPENAI_ENDPOINT, {
@@ -286,7 +317,7 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
         } finally {
             setIsLoading(false);
         }
-    }, [assigneeId, startDate, endDate, department, productMembers, accessToken]);
+    }, [assigneeId, startDate, endDate, department, productMembers, accessToken, customPrompt]);
 
     const handleCopy = async () => {
         if (reportContent) {
@@ -394,6 +425,27 @@ const WeeklyReportModal: React.FC<WeeklyReportModalProps> = ({ onClose, productM
                                     <option key={dep} value={dep}>{dep}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Prompt Editor Section */}
+                        <div className="flex-1 flex flex-col min-h-0">
+                            <label className="block text-sm font-medium text-slate-300 mb-1">
+                                AI Prompt <span className="text-xs text-slate-500">(tùy chỉnh)</span>
+                            </label>
+                            <textarea
+                                value={customPrompt}
+                                onChange={(e) => setCustomPrompt(e.target.value)}
+                                className={`${formElementClasses} flex-1 min-h-[120px] resize-none font-mono text-xs`}
+                                placeholder="Nhập prompt tùy chỉnh cho AI..."
+                                aria-label="Custom AI Prompt"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setCustomPrompt(generateDefaultPrompt())}
+                                className="mt-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors self-end"
+                            >
+                                ↺ Reset về mặc định
+                            </button>
                         </div>
 
                         <div className="mt-auto">
