@@ -8,9 +8,42 @@
   <title>Project Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Base font size */
+    /* Base font size - ensure consistency between dev and production */
+    html {
+      font-size: 12px !important;
+    }
+    
     body {
+      font-size: 12px !important;
+    }
+    
+    #root {
       font-size: 12px;
+    }
+    
+    /* Reset Tailwind's default text sizes to use our base */
+    .text-base {
+      font-size: 12px !important;
+    }
+    
+    .text-sm {
+      font-size: 11px !important;
+    }
+    
+    .text-xs {
+      font-size: 10px !important;
+    }
+    
+    .text-lg {
+      font-size: 14px !important;
+    }
+    
+    .text-xl {
+      font-size: 16px !important;
+    }
+    
+    .text-2xl {
+      font-size: 18px !important;
     }
 
     /* Custom styles for rendering Dataverse Rich Text Editor content */
