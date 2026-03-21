@@ -134,12 +134,12 @@ export async function getProjects(token: string, departmentValues?: number | num
         'crdfd_description',
         'crdfd_objectives',
         'cr1bb_fullcontext',
-        'crdfd_groupchat',
+        'wcg_group_chat',
         'crdfd_user_guide',
         'crdfd_technical_docs',
         'crdfd_priority',
         'crdfd_processstatus',
-        'crdfd_start_date',
+        'wcg_start_date',
         'crdfd_end_date',
     ].join(',');
 
@@ -463,12 +463,12 @@ export async function createProject(projectData: NewProjectPayload, token: strin
     if (projectData.crdfd_description) payload.crdfd_description = projectData.crdfd_description;
     if (projectData.crdfd_requester) payload.crdfd_requester = projectData.crdfd_requester;
     if (projectData.crdfd_user) payload.crdfd_user = projectData.crdfd_user;
-    if (projectData.crdfd_groupchat) payload.crdfd_groupchat = projectData.crdfd_groupchat;
+    if (projectData.wcg_group_chat) payload.wcg_group_chat = projectData.wcg_group_chat;
     if (projectData.crdfd_user_guide) payload.crdfd_user_guide = projectData.crdfd_user_guide;
     if (projectData.crdfd_technical_docs) payload.crdfd_technical_docs = projectData.crdfd_technical_docs;
     if (projectData.crdfd_processurl) payload.crdfd_processurl = projectData.crdfd_processurl;
     if (projectData.crdfd_allstepurl) payload.crdfd_allstepurl = projectData.crdfd_allstepurl;
-    if (projectData.crdfd_start_date) payload.crdfd_start_date = projectData.crdfd_start_date;
+    if (projectData.wcg_start_date) payload.wcg_start_date = projectData.wcg_start_date;
     if (projectData.crdfd_end_date) payload.crdfd_end_date = projectData.crdfd_end_date;
 
     if (projectData.crdfd_priority) {
@@ -493,13 +493,13 @@ export async function updateProject(projectId: string, projectData: UpdateProjec
     if (projectData.crdfd_description !== undefined) payload.crdfd_description = projectData.crdfd_description;
     if (projectData.crdfd_requester !== undefined) payload.crdfd_requester = projectData.crdfd_requester;
     if (projectData.crdfd_user !== undefined) payload.crdfd_user = projectData.crdfd_user;
-    if (projectData.crdfd_groupchat !== undefined) payload.crdfd_groupchat = projectData.crdfd_groupchat;
+    if (projectData.wcg_group_chat !== undefined) payload.wcg_group_chat = projectData.wcg_group_chat;
     if (projectData.crdfd_user_guide !== undefined) payload.crdfd_user_guide = projectData.crdfd_user_guide;
     if (projectData.crdfd_technical_docs !== undefined) payload.crdfd_technical_docs = projectData.crdfd_technical_docs;
     if (projectData.crdfd_processurl !== undefined) payload.crdfd_processurl = projectData.crdfd_processurl;
     if (projectData.crdfd_allstepurl !== undefined) payload.crdfd_allstepurl = projectData.crdfd_allstepurl;
 
-    if (projectData.crdfd_start_date !== undefined) payload.crdfd_start_date = projectData.crdfd_start_date || null;
+    if (projectData.wcg_start_date !== undefined) payload.wcg_start_date = projectData.wcg_start_date || null;
     if (projectData.crdfd_end_date !== undefined) payload.crdfd_end_date = projectData.crdfd_end_date || null;
 
     if (projectData.crdfd_priority) {

@@ -43,7 +43,7 @@ const GenerateDocsModal: React.FC<GenerateDocsModalProps> = ({ project, tasks, o
           Mô tả: ${project.crdfd_description}
           Người yêu cầu: ${project.requester}
           Nhân sự IT: ${project.itStaff?.join(', ')}
-          Ngày bắt đầu: ${project['crdfd_start_date@OData.Community.Display.V1.FormattedValue']}
+          Ngày bắt đầu: ${project['wcg_start_date@OData.Community.Display.V1.FormattedValue']}
           Ngày kết thúc: ${project['crdfd_end_date@OData.Community.Display.V1.FormattedValue']}
           Trạng thái: ${project.crdfd_processstatus}
         `;

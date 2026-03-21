@@ -21,13 +21,13 @@ export interface Project {
   crdfd_objectives?: string;
   cr1bb_fullcontext?: string;
   requester?: string;
-  crdfd_groupchat?: string; // Renamed from groupChat for clarity
+  wcg_group_chat?: string;
   crdfd_user_guide?: string;
   crdfd_technical_docs?: string;
   crdfd_priority?: string;
   'crdfd_priority@OData.Community.Display.V1.FormattedValue'?: string;
-  crdfd_start_date?: string;
-  'crdfd_start_date@OData.Community.Display.V1.FormattedValue'?: string;
+  wcg_start_date?: string;
+  'wcg_start_date@OData.Community.Display.V1.FormattedValue'?: string;
   crdfd_end_date?: string;
   'crdfd_end_date@OData.Community.Display.V1.FormattedValue'?: string;
   crdfd_processstatus?: ProjectStatus;
@@ -133,12 +133,12 @@ export interface NewProjectPayload {
   crdfd_requester?: string;
   crdfd_priority?: TaskPriority;
   crdfd_user?: string; // IT Staff is a single text field in Dataverse
-  crdfd_groupchat?: string;
+  wcg_group_chat?: string;
   crdfd_user_guide?: string;
   crdfd_technical_docs?: string;
   crdfd_processurl?: string;
   crdfd_allstepurl?: string;
-  crdfd_start_date?: string;
+  wcg_start_date?: string;
   crdfd_end_date?: string;
   crdfd_systemid?: string;
   crdfd_department_?: number;
@@ -151,12 +151,12 @@ export interface UpdateProjectPayload {
   crdfd_requester?: string;
   crdfd_priority?: TaskPriority;
   crdfd_user?: string; // IT Staff is a single text field in Dataverse
-  crdfd_groupchat?: string;
+  wcg_group_chat?: string;
   crdfd_user_guide?: string;
   crdfd_technical_docs?: string;
   crdfd_processurl?: string;
   crdfd_allstepurl?: string;
-  crdfd_start_date?: string;
+  wcg_start_date?: string;
   crdfd_end_date?: string;
   crdfd_processstatus?: ProjectStatus;
 }

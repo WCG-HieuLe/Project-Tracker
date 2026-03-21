@@ -381,7 +381,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                 </div>
                                 <div>
                                     <span className="text-slate-500">Start Date</span>
-                                    <p className="text-slate-200 font-medium">{project['crdfd_start_date@OData.Community.Display.V1.FormattedValue'] || 'N/A'}</p>
+                                    <p className="text-slate-200 font-medium">{project['wcg_start_date@OData.Community.Display.V1.FormattedValue'] || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <span className="text-slate-500">Priority</span>
@@ -393,7 +393,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                 </div>
                                 <div className="md:col-span-1">
                                     <span className="text-slate-500">Group Chat</span>
-                                    <p className="text-slate-200 font-medium truncate">{project.crdfd_groupchat || 'N/A'}</p>
+                                    <p className="text-slate-200 font-medium truncate">{project.wcg_group_chat || 'N/A'}</p>
                                 </div>
                             </div>
                         </Card>

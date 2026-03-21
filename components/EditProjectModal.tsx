@@ -46,12 +46,12 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     crdfd_priority: (project.crdfd_priority as TaskPriority) || 'N/A',
     crdfd_processstatus: (project.crdfd_processstatus as ProjectStatus) || 'Backlog',
     crdfd_user: project.itStaff?.join(', ') || '',
-    crdfd_groupchat: project.crdfd_groupchat || '',
+    wcg_group_chat: project.wcg_group_chat || '',
     crdfd_user_guide: project.crdfd_user_guide || '',
     crdfd_technical_docs: project.crdfd_technical_docs || '',
     crdfd_processurl: project.crdfd_processurl || '',
     crdfd_allstepurl: project.crdfd_allstepurl || '',
-    crdfd_start_date: formatDateForInput(project.crdfd_start_date),
+    wcg_start_date: formatDateForInput(project.wcg_start_date),
     crdfd_end_date: formatDateForInput(project.crdfd_end_date),
   });
 
@@ -133,8 +133,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
             </FormRow>
 
             <FormRow>
-                 <FormField label="Start Date" id="crdfd_start_date">
-                    <input type="date" id="crdfd_start_date" name="crdfd_start_date" value={formData.crdfd_start_date} onChange={handleInputChange} disabled={isLoading} className={formElementClasses} />
+                 <FormField label="Start Date" id="wcg_start_date">
+                    <input type="date" id="wcg_start_date" name="wcg_start_date" value={formData.wcg_start_date} onChange={handleInputChange} disabled={isLoading} className={formElementClasses} />
                 </FormField>
                 <FormField label="End Date" id="crdfd_end_date">
                     <input type="date" id="crdfd_end_date" name="crdfd_end_date" value={formData.crdfd_end_date} onChange={handleInputChange} disabled={isLoading} className={formElementClasses} />
@@ -161,8 +161,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                 </FormField>
             </FormRow>
 
-            <FormField label="Group Chat" id="crdfd_groupchat">
-                <input type="text" id="crdfd_groupchat" name="crdfd_groupchat" value={formData.crdfd_groupchat} onChange={handleInputChange} disabled={isLoading} className={formElementClasses} />
+            <FormField label="Group Chat" id="wcg_group_chat">
+                <input type="text" id="wcg_group_chat" name="wcg_group_chat" value={formData.wcg_group_chat} onChange={handleInputChange} disabled={isLoading} className={formElementClasses} />
             </FormField>
             
             <h3 className="text-lg font-semibold text-white pt-4 border-t border-slate-700">Links & Documents</h3>
