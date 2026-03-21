@@ -7,7 +7,7 @@ import ProjectDetail from './components/ProjectDetail';
 import AddProjectModal from './components/AddProjectModal';
 import WeeklyReportModal from './components/WeeklyReportModal';
 import { getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
-import { initializeMsal, login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated } from './services/authService';
+import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated } from './services/authService';
 import { DEFAULT_TASKS } from './constants';
 import type { Project, ProductMember, NewProjectPayload, NewTaskPayload, WeCareSystem, Task } from './types';
 
@@ -41,24 +41,14 @@ const App: React.FC = () => {
 
   const isAuthenticated = loggedInUser !== null;
 
-  // Initialize MSAL on mount
+  // MSAL is already initialized in index.tsx (before React mounts).
+  // Just check if user is already authenticated (e.g. page refresh with cached session).
   useEffect(() => {
-    const init = async () => {
-      try {
-        await initializeMsal();
-        setMsalReady(true);
-
-        // Check if already authenticated (e.g., page refresh)
-        const user = getLoggedInUser();
-        if (user) {
-          setLoggedInUser(user);
-        }
-      } catch (err) {
-        console.error('MSAL initialization failed:', err);
-        setError('Failed to initialize authentication. Please refresh the page.');
-      }
-    };
-    init();
+    setMsalReady(true);
+    const user = getLoggedInUser();
+    if (user) {
+      setLoggedInUser(user);
+    }
   }, []);
 
   const fetchInitialData = useCallback(async () => {
@@ -119,13 +109,8 @@ const App: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const account = await login();
-      const user: LoggedInUser = {
-        id: (account.idTokenClaims as any)?.oid || account.localAccountId || '',
-        name: account.name || '',
-        email: account.username || '',
-      };
-      setLoggedInUser(user);
+      // loginRedirect navigates away to Azure AD — page will reload after auth
+      await login();
     } catch (err) {
       console.error('Login failed:', err);
       setError('Login failed. Please try again.');
@@ -134,15 +119,16 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      // logoutRedirect navigates away — page will reload after sign-out
       await logout();
     } catch {
-      // Ignore logout errors
+      // If redirect fails, clear local state as fallback
+      setLoggedInUser(null);
+      setAccessToken(null);
+      setProjects([]);
+      setAllTasks([]);
+      setDepartmentFilter(DEFAULT_DEP_FILTER);
     }
-    setLoggedInUser(null);
-    setAccessToken(null);
-    setProjects([]);
-    setAllTasks([]);
-    setDepartmentFilter(DEFAULT_DEP_FILTER);
   };
 
   const handleSelectView = (newView: 'dashboard' | 'project', projectId?: string) => {

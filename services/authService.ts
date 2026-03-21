@@ -1,77 +1,118 @@
-import { PublicClientApplication, type Configuration, type AccountInfo, type SilentRequest } from '@azure/msal-browser';
+import {
+  PublicClientApplication,
+  type Configuration,
+  type AccountInfo,
+  type SilentRequest,
+  InteractionRequiredAuthError,
+} from '@azure/msal-browser';
+
 
 const msalConfig: Configuration = {
   auth: {
     clientId: import.meta.env.VITE_MSAL_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${import.meta.env.VITE_MSAL_TENANT_ID}`,
-    redirectUri: window.location.origin + import.meta.env.BASE_URL,
-    postLogoutRedirectUri: window.location.origin + import.meta.env.BASE_URL,
+    redirectUri: window.location.origin + import.meta.env.BASE_URL.replace(/\/+$/, ''),
   },
   cache: {
     cacheLocation: 'localStorage',
   },
 };
 
-const DATAVERSE_SCOPE = `${import.meta.env.VITE_DATAVERSE_URL.replace('/api/data/v9.2/', '')}/.default`;
+const dataverseUrl = import.meta.env.VITE_DATAVERSE_URL || '';
+const DATAVERSE_SCOPE = `${dataverseUrl.replace('/api/data/v9.2/', '')}/.default`;
 
 const loginRequest = {
   scopes: [DATAVERSE_SCOPE],
 };
 
-// Singleton MSAL instance
-export const msalInstance = new PublicClientApplication(msalConfig);
-
-// Initialize MSAL — must be called before any other MSAL operations
-let msalInitialized = false;
-export async function initializeMsal(): Promise<void> {
-  if (msalInitialized) return;
-  await msalInstance.initialize();
-
-  // Handle redirect response (if returning from a redirect login)
-  try {
-    const response = await msalInstance.handleRedirectPromise();
-    if (response) {
-      msalInstance.setActiveAccount(response.account);
-    }
-  } catch (err: any) {
-    // no_token_request_cache_error is expected when using popup flow only
-    if (err?.errorCode !== 'no_token_request_cache_error') {
-      console.warn('handleRedirectPromise error:', err);
-    }
-  }
-
-  // Set active account if one exists in cache
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-    msalInstance.setActiveAccount(accounts[0]);
-  }
-
-  msalInitialized = true;
-}
+// Singleton MSAL instance — created lazily
+let msalInstance: PublicClientApplication | null = null;
+let initPromise: Promise<void> | null = null;
 
 /**
- * Login via popup. Returns the logged-in account.
+ * Clear stale MSAL interaction state from browser storage.
+ * This fixes "interaction_in_progress" errors caused by
+ * popups that were closed before completing or crashed.
  */
-export async function login(): Promise<AccountInfo> {
-  try {
-    const response = await msalInstance.loginPopup(loginRequest);
-    msalInstance.setActiveAccount(response.account);
-    return response.account;
-  } catch (error) {
-    console.error('Login failed:', error);
-    throw error;
+function clearStaleInteractionState(): void {
+  // MSAL v5 stores interaction state in sessionStorage
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && key.includes('interaction')) {
+      keysToRemove.push(key);
+    }
   }
+  keysToRemove.forEach(key => sessionStorage.removeItem(key));
 }
 
 /**
- * Logout and clear session.
+ * Initialize MSAL — safe to call multiple times (idempotent).
+ * MUST be called before React renders to handle popup responses.
+ */
+export async function initializeMsal(): Promise<void> {
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    msalInstance = new PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
+
+    // Handle redirect/popup response if present
+    try {
+      const response = await msalInstance.handleRedirectPromise();
+      if (response) {
+        msalInstance.setActiveAccount(response.account);
+      }
+    } catch (err: any) {
+      if (err?.errorCode !== 'no_token_request_cache_error') {
+        console.warn('handleRedirectPromise error:', err);
+      }
+      // Clear stale state so next login attempt can proceed
+      clearStaleInteractionState();
+    }
+
+    // Set active account if one exists in cache
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
+      msalInstance.setActiveAccount(accounts[0]);
+    }
+  })();
+
+  return initPromise;
+}
+
+/**
+ * Get the initialized MSAL instance.
+ */
+function getMsalInstance(): PublicClientApplication {
+  if (!msalInstance) {
+    throw new Error('MSAL not initialized. Call initializeMsal() first.');
+  }
+  return msalInstance;
+}
+
+/**
+ * Login via redirect. Navigates the entire page to Azure AD login.
+ * After authentication, Azure AD redirects back to the app where
+ * handleRedirectPromise() (in initializeMsal) processes the response.
+ */
+export async function login(): Promise<void> {
+  await initializeMsal();
+  const instance = getMsalInstance();
+  clearStaleInteractionState();
+  await instance.loginRedirect(loginRequest);
+}
+
+/**
+ * Logout and redirect to Azure AD sign-out page.
  */
 export async function logout(): Promise<void> {
-  const account = msalInstance.getActiveAccount();
+  const instance = getMsalInstance();
+  const account = instance.getActiveAccount();
   if (account) {
-    await msalInstance.logoutPopup({
+    await instance.logoutRedirect({
       account,
-      postLogoutRedirectUri: window.location.origin + import.meta.env.BASE_URL,
+      postLogoutRedirectUri: window.location.origin + (import.meta.env.BASE_URL || '/').replace(/\/+$/, ''),
     });
   }
 }
@@ -80,7 +121,8 @@ export async function logout(): Promise<void> {
  * Get Dataverse access token silently. Falls back to popup if needed.
  */
 export async function getDataverseToken(): Promise<string> {
-  const account = msalInstance.getActiveAccount();
+  const instance = getMsalInstance();
+  const account = instance.getActiveAccount();
   if (!account) {
     throw new Error('No active account. Please login first.');
   }
@@ -91,13 +133,15 @@ export async function getDataverseToken(): Promise<string> {
   };
 
   try {
-    const response = await msalInstance.acquireTokenSilent(tokenRequest);
+    const response = await instance.acquireTokenSilent(tokenRequest);
     return response.accessToken;
   } catch (error) {
-    // Silent token acquisition failed, try popup
-    console.warn('Silent token acquisition failed, trying popup:', error);
-    const response = await msalInstance.acquireTokenPopup(tokenRequest);
-    return response.accessToken;
+    if (error instanceof InteractionRequiredAuthError) {
+      console.warn('Silent token acquisition failed, trying popup:', error);
+      const response = await instance.acquireTokenPopup(tokenRequest);
+      return response.accessToken;
+    }
+    throw error;
   }
 }
 
@@ -105,6 +149,7 @@ export async function getDataverseToken(): Promise<string> {
  * Get the currently logged-in user's info.
  */
 export function getLoggedInUser(): { id: string; name: string; email: string } | null {
+  if (!msalInstance) return null;
   const account = msalInstance.getActiveAccount();
   if (!account) return null;
 
@@ -119,5 +164,6 @@ export function getLoggedInUser(): { id: string; name: string; email: string } |
  * Check if user is currently authenticated.
  */
 export function isAuthenticated(): boolean {
+  if (!msalInstance) return false;
   return msalInstance.getActiveAccount() !== null;
 }
