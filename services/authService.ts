@@ -9,7 +9,6 @@ const msalConfig: Configuration = {
   },
   cache: {
     cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
   },
 };
 
@@ -29,9 +28,16 @@ export async function initializeMsal(): Promise<void> {
   await msalInstance.initialize();
 
   // Handle redirect response (if returning from a redirect login)
-  const response = await msalInstance.handleRedirectPromise();
-  if (response) {
-    msalInstance.setActiveAccount(response.account);
+  try {
+    const response = await msalInstance.handleRedirectPromise();
+    if (response) {
+      msalInstance.setActiveAccount(response.account);
+    }
+  } catch (err: any) {
+    // no_token_request_cache_error is expected when using popup flow only
+    if (err?.errorCode !== 'no_token_request_cache_error') {
+      console.warn('handleRedirectPromise error:', err);
+    }
   }
 
   // Set active account if one exists in cache
