@@ -10,13 +10,13 @@ interface TaskListProps {
   accessToken: string;
   productMembers: ProductMember[];
   isAuthenticated: boolean;
-  loggedInUserId: string | null;
+
   onResourceClick: (resource: TechResource) => void;
 }
 
 type FilterStatus = 'All' | TaskStatus;
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, loggedInUserId, onResourceClick }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, onResourceClick }) => {
   const [activeTab, setActiveTab] = useState<FilterStatus>('All');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [displayTasks, setDisplayTasks] = useState<Task[]>([]);
@@ -201,7 +201,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, p
                 onSave={onUpdateTask}
                 accessToken={accessToken}
                 productMembers={productMembers}
-                loggedInUserId={loggedInUserId}
+
             />
         )}
     </div>

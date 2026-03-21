@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN_URL, DATAVERSE_BASE_URL, PROJECTS_ENTITY_SET, TASKS_ENTITY_SET, TECH_RESOURCES_ENTITY_SET, TECH_RESOURCE_TYPE_MAPPING } from '../constants';
+import { DATAVERSE_BASE_URL, PROJECTS_ENTITY_SET, TASKS_ENTITY_SET, TECH_RESOURCES_ENTITY_SET, TECH_RESOURCE_TYPE_MAPPING } from '../constants';
 import type { Project, DataverseCollectionResponse, ProjectCategory, Task, TaskStatus, NewTaskPayload, UpdateTaskPayload, TaskPriority, ProductMember, UpdateProjectPayload, NewProjectPayload, WeCareSystem, ProjectStatus, TechResource, NewTechResourcePayload } from '../types';
 
 /**
@@ -41,25 +41,13 @@ const formatDateOnly = (isoString?: string): string => {
     }
 };
 
-export async function getAccessToken(): Promise<string> {
-    const response = await fetch(ACCESS_TOKEN_URL, {
-        method: 'POST',
-    });
-    if (!response.ok) {
-        throw new Error('Failed to fetch access token');
-    }
-    const data = await response.json();
-    return data.access_token || data;
-}
 
-async function dataverseFetch<T>(endpoint: string, token: string, options: RequestInit = {}, loggedInUserId: string | null = null): Promise<T> {
+
+async function dataverseFetch<T>(endpoint: string, token: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
     headers.set('Authorization', `Bearer ${token}`);
 
     const method = options.method?.toUpperCase();
-    if (loggedInUserId && (method === 'POST' || method === 'PATCH' || method === 'DELETE')) {
-        headers.set('MSCRMCallerID', loggedInUserId);
-    }
 
     const preferHeaders = ['odata.include-annotations="OData.Community.Display.V1.FormattedValue"'];
     if (method === 'POST') {
@@ -352,7 +340,7 @@ export async function getTasksForProjects(projectIds: string[], token: string): 
     return response.value.map(transformDataverseTask);
 }
 
-export async function createTask(taskData: NewTaskPayload, token: string, loggedInUserId: string | null): Promise<void> {
+export async function createTask(taskData: NewTaskPayload, token: string): Promise<void> {
     const endpoint = TASKS_ENTITY_SET;
     const payload: any = {
         "crdfd_name": taskData.name,
@@ -376,10 +364,10 @@ export async function createTask(taskData: NewTaskPayload, token: string, logged
     await dataverseFetch<void>(endpoint, token, {
         method: 'POST',
         body: JSON.stringify(payload),
-    }, loggedInUserId);
+    });
 }
 
-export async function updateTask(taskId: string, taskData: UpdateTaskPayload, token: string, loggedInUserId: string | null): Promise<void> {
+export async function updateTask(taskId: string, taskData: UpdateTaskPayload, token: string): Promise<void> {
     const endpoint = `${TASKS_ENTITY_SET}(${taskId})`;
 
     if (taskData.status === 'Cancelled') {
@@ -390,7 +378,7 @@ export async function updateTask(taskId: string, taskData: UpdateTaskPayload, to
         await dataverseFetch<void>(endpoint, token, {
             method: 'PATCH',
             body: JSON.stringify(deactivatePayload),
-        }, loggedInUserId);
+        });
         return;
     }
 
@@ -411,7 +399,7 @@ export async function updateTask(taskId: string, taskData: UpdateTaskPayload, to
             payload["crdfd_Assignedtask@odata.bind"] = `/crdfd_productmembers(${taskData.assigneeId})`;
         } else {
             try {
-                await dataverseFetch<void>(`${endpoint}/crdfd_Assignedtask/$ref`, token, { method: 'DELETE' }, loggedInUserId);
+                await dataverseFetch<void>(`${endpoint}/crdfd_Assignedtask/$ref`, token, { method: 'DELETE' });
             } catch (e: any) {
                 if (!e.message || !e.message.includes('404')) {
                     throw e;
@@ -425,7 +413,7 @@ export async function updateTask(taskId: string, taskData: UpdateTaskPayload, to
             payload["crdfd_Tech_Resource@odata.bind"] = `/${TECH_RESOURCES_ENTITY_SET}(${taskData.techResourceId})`;
         } else {
             try {
-                await dataverseFetch<void>(`${endpoint}/crdfd_Tech_Resource/$ref`, token, { method: 'DELETE' }, loggedInUserId);
+                await dataverseFetch<void>(`${endpoint}/crdfd_Tech_Resource/$ref`, token, { method: 'DELETE' });
             } catch (e: any) {
                 if (!e.message || !e.message.includes('404')) {
                     throw e;
@@ -448,11 +436,11 @@ export async function updateTask(taskId: string, taskData: UpdateTaskPayload, to
         await dataverseFetch<void>(endpoint, token, {
             method: 'PATCH',
             body: JSON.stringify(payload),
-        }, loggedInUserId);
+        });
     }
 }
 
-export async function createProject(projectData: NewProjectPayload, token: string, loggedInUserId: string | null): Promise<Project> {
+export async function createProject(projectData: NewProjectPayload, token: string): Promise<Project> {
     const endpoint = PROJECTS_ENTITY_SET;
     const payload: any = { "ai_name": projectData.ai_name };
 
@@ -483,10 +471,10 @@ export async function createProject(projectData: NewProjectPayload, token: strin
     return await dataverseFetch<Project>(endpoint, token, {
         method: 'POST',
         body: JSON.stringify(payload),
-    }, loggedInUserId);
+    });
 }
 
-export async function updateProject(projectId: string, projectData: UpdateProjectPayload, token: string, loggedInUserId: string | null): Promise<void> {
+export async function updateProject(projectId: string, projectData: UpdateProjectPayload, token: string): Promise<void> {
     const endpoint = `${PROJECTS_ENTITY_SET}(${projectId})`;
     const payload: any = {};
     if (projectData.ai_name !== undefined) payload.ai_name = projectData.ai_name;
@@ -515,7 +503,7 @@ export async function updateProject(projectId: string, projectData: UpdateProjec
         await dataverseFetch<void>(endpoint, token, {
             method: 'PATCH',
             body: JSON.stringify(payload),
-        }, loggedInUserId);
+        });
     }
 }
 
@@ -538,7 +526,7 @@ export async function getTechResources(token: string): Promise<TechResource[]> {
     }
 }
 
-export async function createTechResource(data: NewTechResourcePayload, token: string, loggedInUserId: string | null): Promise<string> {
+export async function createTechResource(data: NewTechResourcePayload, token: string): Promise<string> {
     const endpoint = TECH_RESOURCES_ENTITY_SET;
     const payload: any = {
         crdfd_name: data.name,
@@ -554,7 +542,7 @@ export async function createTechResource(data: NewTechResourcePayload, token: st
     const response = await dataverseFetch<any>(endpoint, token, {
         method: 'POST',
         body: JSON.stringify(payload)
-    }, loggedInUserId);
+    });
 
     return response.crdfd_tech_resourceid;
 }

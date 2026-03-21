@@ -11,7 +11,7 @@ interface TaskDetailModalProps {
   onSave: (taskId: string, data: UpdateTaskPayload) => Promise<void>;
   accessToken: string;
   productMembers: ProductMember[];
-  loggedInUserId: string | null;
+
 }
 
 const formElementClasses = "w-full bg-slate-800 border border-slate-600 rounded-md p-2 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
@@ -27,7 +27,7 @@ const formatDateForInput = (dateString?: string): string => {
   }
 };
 
-const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave, accessToken, productMembers, loggedInUserId }) => {
+const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave, accessToken, productMembers }) => {
   const [formData, setFormData] = useState({
     name: task.name,
     description: task.description,
@@ -59,7 +59,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave
   const [resourceSearchTerm, setResourceSearchTerm] = useState('');
   const [showResourceDropdown, setShowResourceDropdown] = useState(false);
 
-  const isReadOnly = !loggedInUserId;
+  const isReadOnly = false;
 
   useEffect(() => {
     setFormData({
@@ -144,7 +144,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave
       
       if (isCreatingResource) {
           if (!newResource.name) throw new Error("Resource name is required");
-          const createdId = await createTechResource(newResource, accessToken, loggedInUserId);
+          const createdId = await createTechResource(newResource, accessToken);
           finalTechResourceId = createdId;
       }
 

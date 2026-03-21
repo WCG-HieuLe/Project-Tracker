@@ -22,7 +22,7 @@ interface ProjectDetailProps {
     productMembers: ProductMember[];
     onProjectUpdate: () => void;
     isAuthenticated: boolean;
-    loggedInUserId: string | null;
+
 }
 
 const InfoRow: React.FC<{ label: string, value: React.ReactNode, isVertical?: boolean }> = ({ label, value, isVertical = false }) => (
@@ -59,7 +59,7 @@ const DetailLink: React.FC<{ href: string; children: React.ReactNode }> = ({ hre
     </a>
 )
 
-const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, productMembers, onProjectUpdate, isAuthenticated, loggedInUserId }) => {
+const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, productMembers, onProjectUpdate, isAuthenticated }) => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isTasksLoading, setIsTasksLoading] = useState(true);
     const [tasksError, setTasksError] = useState<string | null>(null);
@@ -173,7 +173,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
             await createTask({
                 ...taskData,
                 projectId: project.ai_processid
-            }, accessToken, loggedInUserId);
+            }, accessToken);
             setIsAddTaskModalOpen(false);
             await fetchTasks(); // Refresh the list
         } catch (err) {
@@ -184,7 +184,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
 
     const handleUpdateTask = async (taskId: string, data: UpdateTaskPayload) => {
         try {
-            await updateTask(taskId, data, accessToken, loggedInUserId);
+            await updateTask(taskId, data, accessToken);
             await fetchTasks(); // Refresh the list on success
         } catch (err) {
             console.error("Failed to update task:", err);
@@ -194,7 +194,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
 
     const handleUpdateProject = async (projectData: UpdateProjectPayload) => {
         try {
-            await updateProject(project.ai_processid, projectData, accessToken, loggedInUserId);
+            await updateProject(project.ai_processid, projectData, accessToken);
             setIsEditProjectModalOpen(false);
             await onProjectUpdate(); // Trigger refresh in App.tsx
         } catch (err) {
@@ -489,7 +489,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                         accessToken={accessToken}
                                         productMembers={productMembers}
                                         isAuthenticated={isAuthenticated}
-                                        loggedInUserId={loggedInUserId}
+
                                         onResourceClick={handleResourceClick}
                                     />
                                 )}
@@ -567,7 +567,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                     accessToken={accessToken}
                     productMembers={productMembers}
                     isAuthenticated={isAuthenticated}
-                    loggedInUserId={loggedInUserId}
+
                     projectName={project.ai_name}
                 />
             )}

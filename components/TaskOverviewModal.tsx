@@ -10,7 +10,7 @@ interface TaskOverviewModalProps {
   accessToken: string;
   productMembers: ProductMember[];
   isAuthenticated: boolean;
-  loggedInUserId: string | null;
+
   projectName: string;
 }
 
@@ -120,7 +120,7 @@ const TaskOverviewModal: React.FC<TaskOverviewModalProps> = ({
     accessToken, 
     productMembers, 
     isAuthenticated,
-    loggedInUserId,
+
     projectName
 }) => {
   const [viewMode, setViewMode] = useState<'List' | 'Kanban' | 'Timeline'>('Kanban');
@@ -663,7 +663,7 @@ const TaskOverviewModal: React.FC<TaskOverviewModalProps> = ({
                     onSave={handleUpdate}
                     accessToken={accessToken}
                     productMembers={productMembers}
-                    loggedInUserId={loggedInUserId}
+
                  />
             </div>
         )}

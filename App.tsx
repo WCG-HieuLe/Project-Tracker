@@ -5,30 +5,19 @@ import LoadingSpinner from './components/LoadingSpinner';
 import Dashboard from './components/Dashboard';
 import ProjectDetail from './components/ProjectDetail';
 import AddProjectModal from './components/AddProjectModal';
-import LoginModal from './components/LoginModal';
 import WeeklyReportModal from './components/WeeklyReportModal';
-import { getAccessToken, getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
+import { getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
+import { initializeMsal, login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated } from './services/authService';
 import { DEFAULT_TASKS } from './constants';
 import type { Project, ProductMember, NewProjectPayload, NewTaskPayload, WeCareSystem, Task } from './types';
 
 interface LoggedInUser {
   id: string;
   name: string;
+  email?: string;
 }
 
-const USER_DEPARTMENT_MAP: { [userId: string]: number } = {
-  '399bde80-1c54-ed11-9562-000d3ac7ccec': 191920006, // Hieu Le Hoang -> General
-  '829bde80-1c54-ed11-9562-000d3ac7ccec': 191920006, // Hoàng Trần -> General
-  '12b2dda8-e49f-ef11-8a69-000d3ac8d88c': 191920002, // Thông Cao Văn -> Logistics
-  '106ab015-d788-ee11-be36-000d3aa3f53e': 191920001, // Hoàng Nguyễn Minh -> Procument
-  'dced0234-5bb0-ef11-b8e8-000d3ac7ae9c': 191920001, // Nghĩa Phan Trọng -> Procument
-  'fe694d73-5bec-f011-8406-7ced8db4f488': 191920006, // Trần Tấn Phát -> General
-};
-
-const LOGISTICS_DEP_ID = 191920002;
 const GENERAL_DEP_ID = 191920006;
-
-// Default View: General per user request
 const DEFAULT_DEP_FILTER = GENERAL_DEP_ID;
 
 const App: React.FC = () => {
@@ -40,13 +29,11 @@ const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'project'>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<LoggedInUser | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [msalReady, setMsalReady] = useState(false);
 
-  // Defaulting to General department
-  // null = "All" selected explicitly, undefined = initial state (use user default)
   const [departmentFilter, setDepartmentFilter] = useState<number | number[] | null | undefined>(DEFAULT_DEP_FILTER);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -54,11 +41,41 @@ const App: React.FC = () => {
 
   const isAuthenticated = loggedInUser !== null;
 
+  // Initialize MSAL on mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initializeMsal();
+        setMsalReady(true);
+
+        // Check if already authenticated (e.g., page refresh)
+        const user = getLoggedInUser();
+        if (user) {
+          setLoggedInUser(user);
+        }
+      } catch (err) {
+        console.error('MSAL initialization failed:', err);
+        setError('Failed to initialize authentication. Please refresh the page.');
+      }
+    };
+    init();
+  }, []);
+
   const fetchInitialData = useCallback(async () => {
     try {
       setError(null);
       setIsLoading(true);
-      const token = await getAccessToken();
+
+      // Get token — uses MSAL if authenticated, otherwise will fail gracefully
+      let token: string;
+      try {
+        token = await getDataverseToken();
+      } catch {
+        // Not authenticated yet — show empty state
+        setIsLoading(false);
+        return;
+      }
+
       setAccessToken(token);
 
       const [fetchedMembers, fetchedSystems] = await Promise.all([
@@ -71,14 +88,9 @@ const App: React.FC = () => {
       let depToFetch: number | number[] | undefined = undefined;
 
       if (departmentFilter === null) {
-        // "All" selected explicitly - fetch all departments
         depToFetch = undefined;
       } else if (departmentFilter !== undefined) {
-        // Specific department(s) selected
         depToFetch = departmentFilter;
-      } else if (loggedInUser) {
-        // Initial state (undefined) - use user default
-        depToFetch = USER_DEPARTMENT_MAP[loggedInUser.id];
       }
 
       const fetchedProjects = await getProjects(token, depToFetch);
@@ -100,17 +112,36 @@ const App: React.FC = () => {
   }, [loggedInUser, departmentFilter]);
 
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    if (msalReady) {
+      fetchInitialData();
+    }
+  }, [fetchInitialData, msalReady]);
 
-  const handleLogin = (user: LoggedInUser) => {
-    setLoggedInUser(user);
-    setDepartmentFilter(USER_DEPARTMENT_MAP[user.id]);
-    setIsLoginModalOpen(false);
+  const handleLogin = async () => {
+    try {
+      const account = await login();
+      const user: LoggedInUser = {
+        id: (account.idTokenClaims as any)?.oid || account.localAccountId || '',
+        name: account.name || '',
+        email: account.username || '',
+      };
+      setLoggedInUser(user);
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError('Login failed. Please try again.');
+    }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Ignore logout errors
+    }
     setLoggedInUser(null);
+    setAccessToken(null);
+    setProjects([]);
+    setAllTasks([]);
     setDepartmentFilter(DEFAULT_DEP_FILTER);
   };
 
@@ -125,12 +156,12 @@ const App: React.FC = () => {
   };
 
   const handleAddProject = async (projectData: NewProjectPayload) => {
-    if (!accessToken || !loggedInUser) {
-      throw new Error("Authentication token or User ID is not available.");
+    if (!accessToken) {
+      throw new Error("Authentication token is not available.");
     }
 
     try {
-      const newProject = await createProject(projectData, accessToken, loggedInUser.id);
+      const newProject = await createProject(projectData, accessToken);
       const newProjectId = newProject.ai_processid;
 
       const taskCreationPromises = DEFAULT_TASKS.map(task => {
@@ -141,7 +172,7 @@ const App: React.FC = () => {
           status: 'To Do',
           priority: 'Medium'
         };
-        return createTask(taskPayload, accessToken, loggedInUser.id);
+        return createTask(taskPayload, accessToken);
       });
       await Promise.all(taskCreationPromises);
 
@@ -158,6 +189,35 @@ const App: React.FC = () => {
   const selectedProject = projects.find(p => p.ai_processid === selectedProjectId) || null;
 
   const renderMainContent = () => {
+    if (!msalReady) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <LoadingSpinner message="Initializing..." />
+        </div>
+      );
+    }
+
+    if (!isAuthenticated) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center space-y-4">
+            <div className="text-6xl">🔒</div>
+            <h2 className="text-2xl font-bold text-white">Project Tracker</h2>
+            <p className="text-slate-400">Đăng nhập bằng tài khoản Microsoft để tiếp tục</p>
+            <button
+              onClick={handleLogin}
+              className="px-6 py-3 rounded-lg text-sm font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-2 mx-auto"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 23 23" fill="currentColor">
+                <path d="M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z"/>
+              </svg>
+              Đăng nhập với Microsoft
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (isLoading && projects.length === 0) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -222,10 +282,7 @@ const App: React.FC = () => {
                   setIsSidebarOpen(false);
                   setIsAddProjectModalOpen(true);
                 }}
-                onLoginRequest={() => {
-                  setIsSidebarOpen(false);
-                  setIsLoginModalOpen(true);
-                }}
+                onLoginRequest={handleLogin}
                 onLogout={handleLogout}
               />
             </aside>
@@ -241,7 +298,7 @@ const App: React.FC = () => {
             isLoading={isLoading && projects.length === 0}
             isAuthenticated={isAuthenticated}
             onAddProject={() => setIsAddProjectModalOpen(true)}
-            onLoginRequest={() => setIsLoginModalOpen(true)}
+            onLoginRequest={handleLogin}
             onLogout={handleLogout}
           />
         </aside>
@@ -278,12 +335,6 @@ const App: React.FC = () => {
           productMembers={productMembers}
           accessToken={accessToken}
           loggedInUser={loggedInUser}
-        />
-      )}
-      {isLoginModalOpen && (
-        <LoginModal
-          onClose={() => setIsLoginModalOpen(false)}
-          onLogin={handleLogin}
         />
       )}
     </>

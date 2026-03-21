@@ -1,19 +1,9 @@
 
 
-export const ACCESS_TOKEN_URL = 'https://de210e4bcd22e60591ca8e841aad4b.8e.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8a726ce87be943a784746a966fb1028a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=LBWfWvNo6KkbYHVq2VvZaMrv5eusXpM0e9U4Tsc8Kxo';
-export const DATAVERSE_BASE_URL = 'https://wecare-ii.crm5.dynamics.com/api/data/v9.2/';
+export const DATAVERSE_BASE_URL = import.meta.env.VITE_DATAVERSE_URL || '';
 export const PROJECTS_ENTITY_SET = 'ai_processes';
 export const TASKS_ENTITY_SET = 'crdfd_tech_taskses';
 export const TECH_RESOURCES_ENTITY_SET = 'crdfd_tech_resources';
-
-export const USERS = [
-  { id: '399bde80-1c54-ed11-9562-000d3ac7ccec', name: 'Hieu Le Hoang' },
-  { id: '829bde80-1c54-ed11-9562-000d3ac7ccec', name: 'Hoàng Trần' },
-  { id: '12b2dda8-e49f-ef11-8a69-000d3ac8d88c', name: 'Thông Cao Văn' },
-  { id: '106ab015-d788-ee11-be36-000d3aa3f53e', name: 'Hoàng Nguyễn Minh' },
-  { id: 'dced0234-5bb0-ef11-b8e8-000d3ac7ae9c', name: 'Nghĩa Phan Trọng' },
-  { id: 'fe694d73-5bec-f011-8406-7ced8db4f488', name: 'Trần Tấn Phát' },
-];
 
 export const DEFAULT_TASKS = [
   {
