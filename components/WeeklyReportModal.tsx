@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import type { Task, ProductMember } from '../types';
 import { getAllTasks } from '../services/dataverseService';
-
-// Azure OpenAI Configuration (from environment variables)
-const AZURE_OPENAI_ENDPOINT = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_KEY = import.meta.env.VITE_AZURE_OPENAI_KEY;
 import ErrorMessage from './ErrorMessage';
 import LoadingSpinner from './LoadingSpinner';
 import Tabs from './Tabs';
@@ -280,29 +277,17 @@ ${JSON.stringify(formattedPlanning)}
 `;
             const prompt = dataContext + '\n' + customPrompt;
 
-            // Call Azure OpenAI API
-            const response = await fetch(AZURE_OPENAI_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': AZURE_OPENAI_KEY,
+            // Call Google Gemini API
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                  systemInstruction: 'Bạn là một trợ lý quản lý dự án chuyên nghiệp.',
                 },
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: 'Bạn là một trợ lý quản lý dự án chuyên nghiệp.' },
-                        { role: 'user', content: prompt }
-                    ],
-                    max_completion_tokens: 4000,
-                }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`Azure OpenAI API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
-            }
-
-            const data = await response.json();
-            let content = data.choices?.[0]?.message?.content || '';
+            let content = response.text || '';
 
             // Clean up potential markdown code fences that the AI might add
             content = content.replace(/^```html\s*/, '').replace(/```\s*$/, '');
