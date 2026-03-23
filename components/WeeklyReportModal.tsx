@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import type { Task, ProductMember } from '../types';
 import { getAllTasks } from '../services/dataverseService';
+import { TEAM_MEMBERS } from '../constants';
 import ErrorMessage from './ErrorMessage';
 import LoadingSpinner from './LoadingSpinner';
 import Tabs from './Tabs';
@@ -17,17 +18,7 @@ const formElementClasses = "w-full bg-slate-800 border border-slate-600 rounded-
 
 const DEPARTMENTS = ["R&D", "Sale", "Sourcing", "Logistic", "HR", "Accounting", "Finance"];
 
-// Whitelist members for Generate Report
-const REPORT_MEMBERS = [
-    "Lê Hoàng Hiếu",
-    "Trần Huy Hoàng",
-    "Trần Tấn Phát",
-    "Nguyễn Đào Minh Thuận",
-    "Phan Trọng Nghĩa",
-    "Nguyễn Minh Hoàng",
-    "Cao Văn Thông",
-    "Phan Hữu Nghiệp",
-];
+
 
 // Helper component for Editable HTML Content
 const EditableReportContent: React.FC<{ initialContent: string; onChange: (html: string) => void }> = ({ initialContent, onChange }) => {
@@ -381,7 +372,7 @@ ${JSON.stringify(formattedPlanning)}
                                 {productMembers
                                     .filter(member => {
                                         const displayName = member.name?.split('_')[0] || member.name;
-                                        return REPORT_MEMBERS.some(rm => displayName === rm);
+                                        return TEAM_MEMBERS.some(rm => displayName === rm);
                                     })
                                     .map(member => (
                                     <option key={member.id} value={member.id}>{member.name?.split('_')[0] || member.name}</option>

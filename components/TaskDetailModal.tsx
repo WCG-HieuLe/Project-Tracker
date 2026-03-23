@@ -3,7 +3,7 @@ import type { Task, UpdateTaskPayload, TaskStatus, TaskPriority, ProductMember, 
 import ErrorMessage from './ErrorMessage';
 import HtmlRenderer from './HtmlRenderer';
 import { createTechResource, getTechResources } from '../services/dataverseService';
-import { TECH_RESOURCE_TYPE_MAPPING } from '../constants';
+import { TECH_RESOURCE_TYPE_MAPPING, TEAM_MEMBERS } from '../constants';
 
 interface TaskDetailModalProps {
   task: Task;
@@ -303,7 +303,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave
                             disabled={isReadOnly}
                         >
                             <option value="">Unassigned</option>
-                            {productMembers.map(member => (
+                            {productMembers
+                                .filter(member => {
+                                    const displayName = member.name?.split('_')[0] || member.name;
+                                    return TEAM_MEMBERS.some(rm => displayName === rm);
+                                })
+                                .map(member => (
                                 <option key={member.id} value={member.id}>
                                     {member.name?.split('_')[0] || member.name}
                                 </option>

@@ -39,3 +39,15 @@ export const TECH_RESOURCE_TYPE_MAPPING: { [key: string]: number } = {
   'Others': 191920007,
   'Calculated Column': 191920008
 };
+
+// Whitelist team members — dùng cho filter assignee dropdowns
+export const TEAM_MEMBERS = [
+    "Lê Hoàng Hiếu",
+    "Trần Huy Hoàng",
+    "Trần Tấn Phát",
+    "Nguyễn Đào Minh Thuận",
+    "Phan Trọng Nghĩa",
+    "Nguyễn Minh Hoàng",
+    "Cao Văn Thông",
+    "Phan Hữu Nghiệp",
+];

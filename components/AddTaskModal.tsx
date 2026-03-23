@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ErrorMessage from './ErrorMessage';
 import type { NewTaskPayload, ProductMember } from '../types';
 import HtmlRenderer from './HtmlRenderer';
+import { TEAM_MEMBERS } from '../constants';
 
 interface AddTaskModalProps {
   onClose: () => void;
@@ -191,7 +192,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onSave, productMem
                             required
                         >
                             <option value="" disabled>Select an assignee</option>
-                            {productMembers.map(member => (
+                            {productMembers
+                                .filter(member => {
+                                    const displayName = member.name?.split('_')[0] || member.name;
+                                    return TEAM_MEMBERS.some(rm => displayName === rm);
+                                })
+                                .map(member => (
                                 <option key={member.id} value={member.id}>
                                     {member.name?.split('_')[0] || member.name}
                                 </option>
