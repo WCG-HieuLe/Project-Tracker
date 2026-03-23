@@ -7,7 +7,7 @@ import ProjectDetail from './components/ProjectDetail';
 import AddProjectModal from './components/AddProjectModal';
 import WeeklyReportModal from './components/WeeklyReportModal';
 import { getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
-import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated } from './services/authService';
+import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated, canEdit as checkCanEdit } from './services/authService';
 import { DEFAULT_TASKS } from './constants';
 import type { Project, ProductMember, NewProjectPayload, NewTaskPayload, WeCareSystem, Task } from './types';
 
@@ -40,6 +40,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const isAuthenticated = loggedInUser !== null;
+  const isEditor = isAuthenticated && checkCanEdit();
 
   // MSAL is already initialized in index.tsx (before React mounts).
   // Just check if user is already authenticated (e.g. page refresh with cached session).
@@ -230,6 +231,7 @@ const App: React.FC = () => {
           onProjectUpdate={fetchInitialData}
           isAuthenticated={isAuthenticated}
           loggedInUserId={loggedInUser?.id || null}
+          canEdit={isEditor}
         />;
       }
     }
@@ -264,6 +266,7 @@ const App: React.FC = () => {
                 onSelectView={handleSelectView}
                 isLoading={isLoading && projects.length === 0}
                 isAuthenticated={isAuthenticated}
+                canEdit={isEditor}
                 onAddProject={() => {
                   setIsSidebarOpen(false);
                   setIsAddProjectModalOpen(true);
@@ -283,6 +286,7 @@ const App: React.FC = () => {
             onSelectView={handleSelectView}
             isLoading={isLoading && projects.length === 0}
             isAuthenticated={isAuthenticated}
+            canEdit={isEditor}
             onAddProject={() => setIsAddProjectModalOpen(true)}
             onLoginRequest={handleLogin}
             onLogout={handleLogout}
@@ -308,7 +312,7 @@ const App: React.FC = () => {
           {renderMainContent()}
         </main>
       </div>
-      {isAuthenticated && isAddProjectModalOpen && (
+      {isEditor && isAddProjectModalOpen && (
         <AddProjectModal
           onClose={() => setIsAddProjectModalOpen(false)}
           onSave={handleAddProject}

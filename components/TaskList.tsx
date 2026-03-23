@@ -10,13 +10,13 @@ interface TaskListProps {
   accessToken: string;
   productMembers: ProductMember[];
   isAuthenticated: boolean;
-
+  canEdit: boolean;
   onResourceClick: (resource: TechResource) => void;
 }
 
 type FilterStatus = 'All' | TaskStatus;
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, onResourceClick }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, canEdit, onResourceClick }) => {
   const [activeTab, setActiveTab] = useState<FilterStatus>('All');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [displayTasks, setDisplayTasks] = useState<Task[]>([]);
@@ -140,19 +140,19 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, p
                         <li 
                             key={task.id} 
                             className={`py-4 flex items-center space-x-4 group transition-colors cursor-pointer`}
-                            draggable={isAuthenticated}
-                            onDragStart={(e) => isAuthenticated && handleDragStart(e, index)}
-                            onDragEnter={(e) => isAuthenticated && handleDragEnter(e, index)}
+                            draggable={canEdit}
+                            onDragStart={(e) => canEdit && handleDragStart(e, index)}
+                            onDragEnter={(e) => canEdit && handleDragEnter(e, index)}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
-                            onDragOver={(e) => isAuthenticated && e.preventDefault()}
+                            onDragOver={(e) => canEdit && e.preventDefault()}
                             onDragEnd={handleDragEnd}
                             onClick={() => setSelectedTask(task)}
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => { if(e.key === 'Enter') setSelectedTask(task) }}
                         >
-                            {isAuthenticated && (
+                            {canEdit && (
                                 <Checkbox 
                                     id={`task-checkbox-${task.id}`} 
                                     checked={isCompleted}
@@ -162,7 +162,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, p
                                     aria-label={`Mark task ${task.name} as ${isCompleted ? 'incomplete' : 'complete'}`}
                                 />
                             )}
-                            <div className={`flex-1 min-w-0 ${!isAuthenticated ? 'ml-2' : ''}`}>
+                            <div className={`flex-1 min-w-0 ${!canEdit ? 'ml-2' : ''}`}>
                                 <span className={`text-sm font-medium text-slate-200 truncate ${isAuthenticated ? 'group-hover:text-cyan-400' : 'group-hover:text-cyan-400'} transition-colors ${isCompleted ? 'line-through text-slate-500' : ''}`}>
                                     {task.name}
                                 </span>
@@ -174,7 +174,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, p
                                     <span>Due: {task.dueDate}</span>
                                 </p>
                             </div>
-                             {isAuthenticated && (
+                             {canEdit && (
                                 <button
                                     onClick={(e) => handleDelete(e, task.id)}
                                     className="ml-2 p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"

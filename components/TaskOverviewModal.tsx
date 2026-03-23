@@ -10,7 +10,7 @@ interface TaskOverviewModalProps {
   accessToken: string;
   productMembers: ProductMember[];
   isAuthenticated: boolean;
-
+  canEdit: boolean;
   projectName: string;
 }
 
@@ -120,7 +120,7 @@ const TaskOverviewModal: React.FC<TaskOverviewModalProps> = ({
     accessToken, 
     productMembers, 
     isAuthenticated,
-
+    canEdit,
     projectName
 }) => {
   const [viewMode, setViewMode] = useState<'List' | 'Kanban' | 'Timeline'>('Kanban');
@@ -298,7 +298,7 @@ const TaskOverviewModal: React.FC<TaskOverviewModalProps> = ({
                             {columnTasks.map(task => (
                                 <div 
                                     key={task.id}
-                                    draggable={isAuthenticated && !isUpdating}
+                                    draggable={canEdit && !isUpdating}
                                     onDragStart={(e) => handleDragStart(e, task.id)}
                                     onClick={() => handleTaskClick(task)}
                                     className="p-3 bg-slate-800 border border-slate-700 rounded-lg shadow-sm hover:border-slate-600 hover:shadow-md transition-all group flex flex-col gap-2 cursor-pointer active:cursor-grabbing"

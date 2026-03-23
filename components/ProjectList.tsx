@@ -11,6 +11,7 @@ interface ProjectListProps {
   isLoading: boolean;
   onAddProject: () => void;
   isAuthenticated: boolean;
+  canEdit: boolean;
   onLoginRequest: () => void;
   onLogout: () => void;
 }
@@ -52,7 +53,7 @@ const NavItem: React.FC<{
 );
 
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, currentView, selectedProjectId, onSelectView, isLoading, onAddProject, isAuthenticated, onLoginRequest, onLogout }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, currentView, selectedProjectId, onSelectView, isLoading, onAddProject, isAuthenticated, canEdit, onLoginRequest, onLogout }) => {
   
   const categorizedProjects = {
     'ACTIVE PROJECTS': projects.filter(p => p.category === 'ACTIVE'),
@@ -113,7 +114,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, currentView, select
         )}
       </nav>
       <div className="mt-auto">
-        {isAuthenticated && (
+        {canEdit && (
             <button 
                 onClick={onAddProject}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"

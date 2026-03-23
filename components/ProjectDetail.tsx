@@ -22,7 +22,7 @@ interface ProjectDetailProps {
     productMembers: ProductMember[];
     onProjectUpdate: () => void;
     isAuthenticated: boolean;
-
+    canEdit: boolean;
 }
 
 const InfoRow: React.FC<{ label: string, value: React.ReactNode, isVertical?: boolean }> = ({ label, value, isVertical = false }) => (
@@ -59,7 +59,7 @@ const DetailLink: React.FC<{ href: string; children: React.ReactNode }> = ({ hre
     </a>
 )
 
-const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, productMembers, onProjectUpdate, isAuthenticated }) => {
+const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, productMembers, onProjectUpdate, isAuthenticated, canEdit }) => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isTasksLoading, setIsTasksLoading] = useState(true);
     const [tasksError, setTasksError] = useState<string | null>(null);
@@ -332,7 +332,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                     Generate Docs
                                 </button>
                             )}
-                            {isAuthenticated && (
+                            {canEdit && (
                                 <button
                                     onClick={() => setIsEditProjectModalOpen(true)}
                                     className="px-3 py-2 text-sm font-semibold bg-slate-600 hover:bg-slate-500 text-white rounded-md transition-colors flex items-center gap-2"
@@ -439,7 +439,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                     <h3 className="text-lg font-semibold text-white">Tasks</h3>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {isAuthenticated && (
+                                    {canEdit && (
                                         <button
                                             onClick={() => setIsAddTaskModalOpen(true)}
                                             className="px-3 py-1 text-sm font-semibold bg-cyan-600 hover:bg-cyan-500 text-white rounded-md transition-colors flex items-center gap-2"
@@ -489,7 +489,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                                         accessToken={accessToken}
                                         productMembers={productMembers}
                                         isAuthenticated={isAuthenticated}
-
+                                        canEdit={canEdit}
                                         onResourceClick={handleResourceClick}
                                     />
                                 )}
@@ -525,7 +525,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                     </div>
                 </div>
             </div>
-            {isAuthenticated && isAddTaskModalOpen && (
+            {canEdit && isAddTaskModalOpen && (
                 <AddTaskModal
                     onClose={() => setIsAddTaskModalOpen(false)}
                     onSave={handleAddTask}
@@ -533,7 +533,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                     accessToken={accessToken}
                 />
             )}
-            {isAuthenticated && isEditProjectModalOpen && (
+            {canEdit && isEditProjectModalOpen && (
                 <EditProjectModal
                     project={project}
                     onClose={() => setIsEditProjectModalOpen(false)}
@@ -567,7 +567,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, accessToken, pro
                     accessToken={accessToken}
                     productMembers={productMembers}
                     isAuthenticated={isAuthenticated}
-
+                    canEdit={canEdit}
                     projectName={project.ai_name}
                 />
             )}

@@ -167,3 +167,22 @@ export function isAuthenticated(): boolean {
   if (!msalInstance) return false;
   return msalInstance.getActiveAccount() !== null;
 }
+
+// Whitelist editors — match by email (MSAL account.username)
+const EDITOR_EMAILS = [
+  'hieu.le@wecare-i.com',
+  'hoang.tran@wecare-i.com',
+  'phat.tran@wecare-i.com',
+  'thuan.nguyendaominh@wecare-i.com',
+];
+
+/**
+ * Check if current user has Edit permission.
+ * Only whitelisted team members (Sys, Core, R&D) can edit.
+ */
+export function canEdit(): boolean {
+  if (!msalInstance) return false;
+  const account = msalInstance.getActiveAccount();
+  if (!account) return false;
+  return EDITOR_EMAILS.includes(account.username.toLowerCase());
+}
