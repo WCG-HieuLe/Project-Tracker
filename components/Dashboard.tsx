@@ -13,6 +13,7 @@ interface DashboardProps {
     allTasks: Task[];
     onSelectProject: (projectId: string) => void;
     isLoading: boolean;
+    isTasksLoading?: boolean;
     loggedInUser: LoggedInUser | null;
     onGenerateReport: () => void;
     selectedDepartment?: number | number[];
@@ -52,7 +53,7 @@ const DEP_OPTIONS = [
     { label: 'HR', value: 191920004 },
 ];
 
-const Dashboard: React.FC<DashboardProps> = ({ projects, allTasks, onSelectProject, isLoading, loggedInUser, onGenerateReport, selectedDepartment, onDepartmentChange }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projects, allTasks, onSelectProject, isLoading, isTasksLoading = false, loggedInUser, onGenerateReport, selectedDepartment, onDepartmentChange }) => {
     const activeProjects = projects.filter(p => p.category === 'ACTIVE');
 
     const projectsWithBlockers = useMemo(() => {
@@ -181,7 +182,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, allTasks, onSelectProje
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
                     title="Blockers / Pending Tasks"
                 >
-                    {projectsWithBlockers.length > 0 ? (
+                    {isTasksLoading ? (
+                        <p className="text-slate-500 animate-pulse">Loading tasks...</p>
+                    ) : projectsWithBlockers.length > 0 ? (
                         <ul className="space-y-2 -my-1">
                             {projectsWithBlockers.map(item => (
                                 <li key={item.projectId}>

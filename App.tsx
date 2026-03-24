@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ProjectList from './components/ProjectList';
 import ErrorMessage from './components/ErrorMessage';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -7,7 +7,9 @@ import ProjectDetail from './components/ProjectDetail';
 import AddProjectModal from './components/AddProjectModal';
 import WeeklyReportModal from './components/WeeklyReportModal';
 import { getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
-import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated, canEdit as checkCanEdit, clearMsalCache } from './services/authService';
+import { login, logout, getDataverseToken, getLoggedInUser, canEdit as checkCanEdit, clearMsalCache } from './services/authService';
+import { cacheClearAll } from './services/apiCache';
+import { useApiData } from './hooks/useApiData';
 import { DEFAULT_TASKS } from './constants';
 import type { Project, ProductMember, NewProjectPayload, NewTaskPayload, WeCareSystem, Task } from './types';
 
@@ -20,12 +22,16 @@ interface LoggedInUser {
 const GENERAL_DEP_ID = 191920006;
 const DEFAULT_DEP_FILTER = GENERAL_DEP_ID;
 
+/**
+ * Helper: acquire Dataverse token, or clear stale MSAL cache and throw.
+ * Centralizes token acquisition + stale-cache handling.
+ */
+async function acquireTokenOrClear(): Promise<string> {
+  return getDataverseToken();
+}
+
 const App: React.FC = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [productMembers, setProductMembers] = useState<ProductMember[]>([]);
-  const [weCareSystems, setWeCareSystems] = useState<WeCareSystem[]>([]);
   const [view, setView] = useState<'dashboard' | 'project'>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
@@ -33,17 +39,28 @@ const App: React.FC = () => {
   const [loggedInUser, setLoggedInUser] = useState<LoggedInUser | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [msalReady, setMsalReady] = useState(false);
+  const [tokenError, setTokenError] = useState(false);
 
   const [departmentFilter, setDepartmentFilter] = useState<number | number[] | null | undefined>(DEFAULT_DEP_FILTER);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const isAuthenticated = loggedInUser !== null;
+  const isAuthenticated = loggedInUser !== null && !tokenError;
   const isEditor = isAuthenticated && checkCanEdit();
 
-  // MSAL is already initialized in index.tsx (before React mounts).
-  // Just check if user is already authenticated (e.g. page refresh with cached session).
+  // Compute dep key for cache invalidation
+  const depKey = useMemo(() => {
+    if (departmentFilter === null) return 'all';
+    if (departmentFilter === undefined) return 'default';
+    if (Array.isArray(departmentFilter)) return departmentFilter.sort().join('_');
+    return String(departmentFilter);
+  }, [departmentFilter]);
+
+  const depToFetch = useMemo(() => {
+    if (departmentFilter === null) return undefined;
+    if (departmentFilter !== undefined) return departmentFilter;
+    return undefined;
+  }, [departmentFilter]);
+
+  // MSAL init — check if user is already authenticated
   useEffect(() => {
     setMsalReady(true);
     const user = getLoggedInUser();
@@ -52,91 +69,116 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const fetchInitialData = useCallback(async () => {
+  // ─── useApiData hooks — stale-while-revalidate ────────────────
+
+  // Token fetcher (shared by all hooks)
+  const getToken = useCallback(async (): Promise<string> => {
     try {
-      setError(null);
-      setIsLoading(true);
-
-      // Get token — uses MSAL if authenticated, otherwise will fail gracefully
-      let token: string;
-      try {
-        token = await getDataverseToken();
-      } catch (tokenError) {
-        // If user appeared authenticated but token fetch failed → stale cache
-        if (loggedInUser) {
-          console.warn('⚠️ Token stale/expired, clearing MSAL cache and forcing re-login...', tokenError);
-          clearMsalCache();
-          setLoggedInUser(null);
-          setAccessToken(null);
-          setProjects([]);
-          setAllTasks([]);
-        }
-        // Show login screen
-        setIsLoading(false);
-        return;
-      }
-
+      const token = await acquireTokenOrClear();
       setAccessToken(token);
-
-      const [fetchedMembers, fetchedSystems] = await Promise.all([
-        getProductMembers(token),
-        getWeCareSystems(token),
-      ]);
-      setProductMembers(fetchedMembers);
-      setWeCareSystems(fetchedSystems);
-
-      let depToFetch: number | number[] | undefined = undefined;
-
-      if (departmentFilter === null) {
-        depToFetch = undefined;
-      } else if (departmentFilter !== undefined) {
-        depToFetch = departmentFilter;
-      }
-
-      const fetchedProjects = await getProjects(token, depToFetch);
-      setProjects(fetchedProjects);
-
-      if (fetchedProjects.length > 0) {
-        const projectIds = fetchedProjects.map(p => p.ai_processid);
-        const fetchedTasks = await getTasksForProjects(projectIds, token);
-        setAllTasks(fetchedTasks);
-      } else {
-        setAllTasks([]);
-      }
-
+      setTokenError(false);
+      return token;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-    } finally {
-      setIsLoading(false);
+      console.warn('⚠️ Token stale/expired, clearing MSAL cache...', err);
+      clearMsalCache();
+      setLoggedInUser(null);
+      setAccessToken(null);
+      setTokenError(true);
+      throw err;
     }
-  }, [loggedInUser, departmentFilter]);
+  }, []);
 
-  useEffect(() => {
-    if (msalReady) {
-      fetchInitialData();
-    }
-  }, [fetchInitialData, msalReady]);
+  // 1. Projects — primary data, cache 10 min
+  const projectsFetcher = useCallback(async () => {
+    const token = await getToken();
+    return getProjects(token, depToFetch);
+  }, [getToken, depToFetch]);
+
+  const {
+    data: projects,
+    loading: projectsLoading,
+    error: projectsError,
+    refresh: refreshProjects,
+  } = useApiData<Project[]>({
+    key: `projects_${depKey}`,
+    fetcher: projectsFetcher,
+    enabled: msalReady && !!loggedInUser && !tokenError,
+    initialData: [],
+  });
+
+  // 2. Product Members — cache 30 min (rarely changes)
+  const membersFetcher = useCallback(async () => {
+    const token = await getToken();
+    return getProductMembers(token);
+  }, [getToken]);
+
+  const { data: productMembers } = useApiData<ProductMember[]>({
+    key: 'product_members',
+    fetcher: membersFetcher,
+    ttl: 30 * 60 * 1000,
+    enabled: msalReady && !!loggedInUser && !tokenError,
+    initialData: [],
+  });
+
+  // 3. WeCare Systems — cache 30 min (rarely changes)
+  const systemsFetcher = useCallback(async () => {
+    const token = await getToken();
+    return getWeCareSystems(token);
+  }, [getToken]);
+
+  const { data: weCareSystems } = useApiData<WeCareSystem[]>({
+    key: 'wecare_systems',
+    fetcher: systemsFetcher,
+    ttl: 30 * 60 * 1000,
+    enabled: msalReady && !!loggedInUser && !tokenError,
+    initialData: [],
+  });
+
+  // 4. Tasks — lazy, only fetch AFTER projects loaded
+  const projectIds = useMemo(
+    () => projects.map(p => p.ai_processid),
+    [projects]
+  );
+
+  const tasksFetcher = useCallback(async () => {
+    const token = await getToken();
+    return projectIds.length > 0 ? getTasksForProjects(projectIds, token) : [];
+  }, [getToken, projectIds]);
+
+  const {
+    data: allTasks,
+    loading: tasksLoading,
+    refresh: refreshTasks,
+  } = useApiData<Task[]>({
+    key: `tasks_${depKey}`,
+    fetcher: tasksFetcher,
+    enabled: msalReady && !!loggedInUser && !tokenError && projects.length > 0,
+    initialData: [],
+  });
+
+  // ─── Refresh all data (used after creating project) ───────────
+  const refreshAllData = useCallback(() => {
+    refreshProjects();
+    // Tasks will auto-refresh when projects change (different projectIds → different cache key)
+  }, [refreshProjects]);
+
+  // ─── Handlers ──────────────────────────────────────────────────
 
   const handleLogin = async () => {
     try {
-      // loginRedirect navigates away to Azure AD — page will reload after auth
       await login();
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Login failed. Please try again.');
     }
   };
 
   const handleLogout = async () => {
     try {
-      // logoutRedirect navigates away — page will reload after sign-out
+      cacheClearAll();
       await logout();
     } catch {
-      // If redirect fails, clear local state as fallback
       setLoggedInUser(null);
       setAccessToken(null);
-      setProjects([]);
-      setAllTasks([]);
       setDepartmentFilter(DEFAULT_DEP_FILTER);
     }
   };
@@ -173,7 +215,7 @@ const App: React.FC = () => {
       await Promise.all(taskCreationPromises);
 
       setIsAddProjectModalOpen(false);
-      await fetchInitialData();
+      refreshAllData();
       handleSelectView('project', newProjectId);
 
     } catch (err) {
@@ -214,7 +256,7 @@ const App: React.FC = () => {
       );
     }
 
-    if (isLoading && projects.length === 0) {
+    if (projectsLoading && projects.length === 0) {
       return (
         <div className="flex items-center justify-center h-full">
           <LoadingSpinner message="Đang tải dữ liệu..." />
@@ -222,10 +264,10 @@ const App: React.FC = () => {
       );
     }
 
-    if (error) {
+    if (projectsError) {
       return (
         <div className="p-6">
-          <ErrorMessage message={error} />
+          <ErrorMessage message={projectsError} />
         </div>
       );
     }
@@ -237,7 +279,7 @@ const App: React.FC = () => {
           project={selectedProject}
           accessToken={accessToken}
           productMembers={productMembers}
-          onProjectUpdate={fetchInitialData}
+          onProjectUpdate={refreshAllData}
           isAuthenticated={isAuthenticated}
           loggedInUserId={loggedInUser?.id || null}
           canEdit={isEditor}
@@ -249,7 +291,8 @@ const App: React.FC = () => {
       projects={projects}
       allTasks={allTasks}
       onSelectProject={(projectId) => handleSelectView('project', projectId)}
-      isLoading={isLoading}
+      isLoading={projectsLoading}
+      isTasksLoading={tasksLoading}
       loggedInUser={loggedInUser}
       onGenerateReport={() => setIsReportModalOpen(true)}
       selectedDepartment={departmentFilter}
@@ -273,7 +316,7 @@ const App: React.FC = () => {
                 currentView={view}
                 selectedProjectId={selectedProjectId}
                 onSelectView={handleSelectView}
-                isLoading={isLoading && projects.length === 0}
+                isLoading={projectsLoading && projects.length === 0}
                 isAuthenticated={isAuthenticated}
                 canEdit={isEditor}
                 onAddProject={() => {
@@ -293,7 +336,7 @@ const App: React.FC = () => {
             currentView={view}
             selectedProjectId={selectedProjectId}
             onSelectView={handleSelectView}
-            isLoading={isLoading && projects.length === 0}
+            isLoading={projectsLoading && projects.length === 0}
             isAuthenticated={isAuthenticated}
             canEdit={isEditor}
             onAddProject={() => setIsAddProjectModalOpen(true)}
