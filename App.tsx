@@ -281,7 +281,6 @@ const App: React.FC = () => {
           productMembers={productMembers}
           onProjectUpdate={refreshAllData}
           isAuthenticated={isAuthenticated}
-          loggedInUserId={loggedInUser?.id || null}
           canEdit={isEditor}
         />;
       }
