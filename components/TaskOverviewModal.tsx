@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { Task, ProductMember, UpdateTaskPayload, TaskStatus, TechResource } from '../types';
+import type { Task, ProductMember, UpdateTaskPayload, TaskStatus } from '../types';
 import TaskDetailModal from './TaskDetailModal';
 
 interface TaskOverviewModalProps {
@@ -9,7 +9,6 @@ interface TaskOverviewModalProps {
   onUpdateTask: (taskId: string, data: UpdateTaskPayload) => Promise<void>;
   accessToken: string;
   productMembers: ProductMember[];
-  isAuthenticated: boolean;
   canEdit: boolean;
   projectName: string;
 }
@@ -119,7 +118,6 @@ const TaskOverviewModal: React.FC<TaskOverviewModalProps> = ({
     onUpdateTask, 
     accessToken, 
     productMembers, 
-    isAuthenticated,
     canEdit,
     projectName
 }) => {

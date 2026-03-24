@@ -266,9 +266,6 @@ Sau đó, hãy tạo chính xác 3 phần sau đây:
                 HanChot: t.dueDate
             }));
 
-            const reportTime = `${formatDate(startDate)} – ${formatDate(endDate)}`;
-            const assigneeName = selectedAssignee.name?.split('_')[0] || selectedAssignee.name || 'N/A';
-
             // Build the full prompt with data context + user's custom prompt
             const dataContext = `
 **Dữ liệu đầu vào:**

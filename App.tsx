@@ -148,7 +148,6 @@ const App: React.FC = () => {
   const {
     data: allTasks,
     loading: tasksLoading,
-    refresh: refreshTasks,
   } = useApiData<Task[]>({
     key: `tasks_${depKey}`,
     fetcher: tasksFetcher,

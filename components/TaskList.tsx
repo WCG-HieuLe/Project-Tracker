@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { Task, TaskStatus, UpdateTaskPayload, ProductMember, TechResource } from '../types';
+import type { Task, TaskStatus, UpdateTaskPayload, ProductMember } from '../types';
 import Tabs from './Tabs';
 import Checkbox from './Checkbox';
 import TaskDetailModal from './TaskDetailModal';
@@ -11,12 +11,11 @@ interface TaskListProps {
   productMembers: ProductMember[];
   isAuthenticated: boolean;
   canEdit: boolean;
-  onResourceClick: (resource: TechResource) => void;
 }
 
 type FilterStatus = 'All' | TaskStatus;
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, canEdit, onResourceClick }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, accessToken, productMembers, isAuthenticated, canEdit }) => {
   const [activeTab, setActiveTab] = useState<FilterStatus>('All');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [displayTasks, setDisplayTasks] = useState<Task[]>([]);

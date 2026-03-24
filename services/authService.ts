@@ -1,7 +1,6 @@
 import {
   PublicClientApplication,
   type Configuration,
-  type AccountInfo,
   type SilentRequest,
   InteractionRequiredAuthError,
 } from '@azure/msal-browser';
