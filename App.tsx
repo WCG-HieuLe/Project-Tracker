@@ -7,7 +7,7 @@ import ProjectDetail from './components/ProjectDetail';
 import AddProjectModal from './components/AddProjectModal';
 import WeeklyReportModal from './components/WeeklyReportModal';
 import { getProjects, getProductMembers, createProject, createTask, getWeCareSystems, getTasksForProjects } from './services/dataverseService';
-import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated, canEdit as checkCanEdit } from './services/authService';
+import { login, logout, getDataverseToken, getLoggedInUser, isAuthenticated as checkIsAuthenticated, canEdit as checkCanEdit, clearMsalCache } from './services/authService';
 import { DEFAULT_TASKS } from './constants';
 import type { Project, ProductMember, NewProjectPayload, NewTaskPayload, WeCareSystem, Task } from './types';
 
@@ -61,8 +61,17 @@ const App: React.FC = () => {
       let token: string;
       try {
         token = await getDataverseToken();
-      } catch {
-        // Not authenticated yet — show empty state
+      } catch (tokenError) {
+        // If user appeared authenticated but token fetch failed → stale cache
+        if (loggedInUser) {
+          console.warn('⚠️ Token stale/expired, clearing MSAL cache and forcing re-login...', tokenError);
+          clearMsalCache();
+          setLoggedInUser(null);
+          setAccessToken(null);
+          setProjects([]);
+          setAllTasks([]);
+        }
+        // Show login screen
         setIsLoading(false);
         return;
       }

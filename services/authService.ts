@@ -168,6 +168,30 @@ export function isAuthenticated(): boolean {
   return msalInstance.getActiveAccount() !== null;
 }
 
+/**
+ * Clear all MSAL cache (localStorage + sessionStorage) and reset active account.
+ * Use when token is stale/corrupted to force a clean re-login.
+ */
+export function clearMsalCache(): void {
+  // Clear MSAL entries from localStorage
+  const lsKeysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('msal.') || key.includes('login.microsoftonline'))) {
+      lsKeysToRemove.push(key);
+    }
+  }
+  lsKeysToRemove.forEach(key => localStorage.removeItem(key));
+
+  // Clear interaction state from sessionStorage
+  clearStaleInteractionState();
+
+  // Reset active account
+  if (msalInstance) {
+    msalInstance.setActiveAccount(null);
+  }
+}
+
 // Whitelist editors — match by email (MSAL account.username)
 const EDITOR_EMAILS = [
   'hieu.le@wecare-i.com',
