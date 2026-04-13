@@ -6,7 +6,7 @@ interface UseApiDataOptions<T> {
     key: string;
     /** Hàm async trả về data */
     fetcher: () => Promise<T>;
-    /** Cache TTL in ms (default: 10 phút) */
+    /** Cache TTL in ms (default: 30 phút) */
     ttl?: number;
     /** Chỉ fetch khi true (default: true) */
     enabled?: boolean;
@@ -27,7 +27,7 @@ export function useApiData<T>(options: UseApiDataOptions<T>): UseApiDataResult<T
     const {
         key,
         fetcher,
-        ttl = 10 * 60 * 1000,
+        ttl = 30 * 60 * 1000,
         enabled = true,
         initialData,
     } = options;
@@ -38,32 +38,37 @@ export function useApiData<T>(options: UseApiDataOptions<T>): UseApiDataResult<T
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isStale, setIsStale] = useState(!!cached);
+    
     const mountedRef = useRef(true);
-    const fetchedRef = useRef(!!cached);
+    const fetchedKeyRef = useRef<string | null>(!!cached ? key : null);
 
     const doFetch = useCallback(async (force = false) => {
         if (!enabled) return;
 
+        const currentCache = cacheGet<T>(key, ttl);
+
         if (force) {
             cacheClear(key);
             setRefreshing(true);
-        } else if (fetchedRef.current) {
+        } else if (fetchedKeyRef.current === key) {
             return;
-        } else if (cacheGet(key, ttl)) {
+        } else if (currentCache) {
+            setData(currentCache);
             setIsStale(true);
             setRefreshing(true);
         } else {
+            setData(initialData as T);
             setLoading(true);
         }
 
         setError(null);
+        fetchedKeyRef.current = key;
 
         try {
             const result = await fetcher();
             if (!mountedRef.current) return;
             setData(result);
             cacheSet(key, result);
-            fetchedRef.current = true;
             setIsStale(false);
         } catch (err) {
             if (!mountedRef.current) return;
@@ -76,7 +81,7 @@ export function useApiData<T>(options: UseApiDataOptions<T>): UseApiDataResult<T
                 setRefreshing(false);
             }
         }
-    }, [key, fetcher, ttl, enabled]);
+    }, [key, fetcher, ttl, enabled, initialData]);
 
     useEffect(() => {
         mountedRef.current = true;

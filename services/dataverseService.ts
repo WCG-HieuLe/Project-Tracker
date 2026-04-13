@@ -138,7 +138,7 @@ export async function getProjects(token: string, departmentValues?: number | num
         const depFilter = values.map(v => `crdfd_department_ eq ${v}`).join(' or ');
         filter = `statecode eq 0 and crdfd_processstatus ne 191920000 and (${depFilter})`;
     } else {
-        filter = `statecode eq 0 and (crdfd_processstatus eq 191920001 or crdfd_processstatus eq 191920003)`;
+        filter = `statecode eq 0 and crdfd_department_ ne null and (crdfd_processstatus eq 191920001 or crdfd_processstatus eq 191920003)`;
     }
 
     const endpoint = `${PROJECTS_ENTITY_SET}?$select=${selectFields}&$filter=${filter}&$orderby=createdon desc`;
