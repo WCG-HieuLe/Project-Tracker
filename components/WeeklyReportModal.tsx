@@ -151,8 +151,8 @@ Sau đó, hãy tạo chính xác 3 phần sau đây:
 
 **Phần 3: Kế hoạch tuần tới**
 - Sử dụng thẻ \`<h2>3. Kế hoạch tuần tới</h2>\`.
-- Dựa vào dữ liệu "Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH", hãy viết một đoạn văn (hoặc 1-2 câu) mô tả chung, tổng quát về trọng tâm công việc tuần tới.
-- **KHÔNG** liệt kê chi tiết từng đầu việc (không dùng danh sách ul/li cho phần này). Chỉ mô tả định hướng chung.
+- Dựa vào nội dung "Kế hoạch tiếp theo" của các công việc ở trên, hãy tổng hợp lại thành một đoạn văn (hoặc 1-2 câu) mô tả chung, tổng quát về định hướng và trọng tâm công việc tuần tới.
+- **KHÔNG** liệt kê chi tiết từng đầu việc (không dùng danh sách ul/li cho phần này). Chỉ tổng hợp ngắn gọn định hướng chung.
 
 **Lưu ý:** Chỉ trả về mã HTML để render bên trong thẻ body.`;
     }, [assigneeId, startDate, endDate, department, productMembers]);
@@ -229,15 +229,6 @@ Sau đó, hãy tạo chính xác 3 phần sau đây:
                 return taskDateStr >= startDate && taskDateStr <= endDate;
             });
 
-            // 2. Filter Upcoming/Ongoing Tasks (for "Plan for next week")
-            // Logic: Tasks assigned to user that are NOT Completed, Cancelled, or Unknown.
-            const planningTasks = allTasks.filter(task => {
-                return (
-                    checkAssigneeMatch(task) &&
-                    ['In Progress', 'To Do', 'Review', 'Pending'].includes(task.status)
-                );
-            });
-
             // Sort tasks chronologically
             const sortedCompletedTasks = completedTasks.sort((a, b) => {
                 const dateA = a.endDateRaw ? new Date(a.endDateRaw).getTime() : 0;
@@ -245,7 +236,7 @@ Sau đó, hãy tạo chính xác 3 phần sau đây:
                 return dateA - dateB;
             });
 
-            if (sortedCompletedTasks.length === 0 && planningTasks.length === 0) {
+            if (sortedCompletedTasks.length === 0) {
                 setReportContent(`<h1>BÁO CÁO CÔNG VIỆC TUẦN</h1><div class='report-meta'><p>Không tìm thấy dữ liệu công việc (hoàn thành hoặc đang thực hiện) cho nhân sự <strong>${selectedAssignee.name}</strong> trong khoảng thời gian <strong>${formatDate(startDate)} đến ${formatDate(endDate)}</strong>.</p><p>Vui lòng kiểm tra lại bộ lọc hoặc đảm bảo công việc đã được gán đúng người và cập nhật trạng thái/ngày tháng.</p></div>`);
                 setIsLoading(false);
                 setGenerationCount(prev => prev + 1);
@@ -259,21 +250,11 @@ Sau đó, hãy tạo chính xác 3 phần sau đây:
                 MoTa: t.description.replace(/<[^>]*>/g, ' '), // Strip HTML tags
             }));
 
-            const formattedPlanning = planningTasks.map(t => ({
-                QuyTrinh: t.project,
-                CongViec: t.name,
-                TrangThai: t.status,
-                HanChot: t.dueDate
-            }));
-
             // Build the full prompt with data context + user's custom prompt
             const dataContext = `
 **Dữ liệu đầu vào:**
-1. Danh sách công việc ĐÃ HOÀN THÀNH trong tuần:
+Danh sách công việc ĐÃ HOÀN THÀNH trong tuần:
 ${JSON.stringify(formattedCompleted)}
-
-2. Danh sách công việc ĐANG THỰC HIỆN / KẾ HOẠCH (cho tuần tới):
-${JSON.stringify(formattedPlanning)}
 `;
             const prompt = dataContext + '\n' + customPrompt;
 
