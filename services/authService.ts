@@ -10,7 +10,7 @@ const msalConfig: Configuration = {
   auth: {
     clientId: import.meta.env.VITE_MSAL_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${import.meta.env.VITE_MSAL_TENANT_ID}`,
-    redirectUri: window.location.origin + import.meta.env.BASE_URL.replace(/\/+$/, ''),
+    redirectUri: window.location.origin + import.meta.env.BASE_URL,
   },
   cache: {
     cacheLocation: 'localStorage',
@@ -111,7 +111,7 @@ export async function logout(): Promise<void> {
   if (account) {
     await instance.logoutRedirect({
       account,
-      postLogoutRedirectUri: window.location.origin + (import.meta.env.BASE_URL || '/').replace(/\/+$/, ''),
+      postLogoutRedirectUri: window.location.origin + (import.meta.env.BASE_URL || '/'),
     });
   }
 }
