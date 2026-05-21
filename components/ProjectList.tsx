@@ -55,11 +55,15 @@ const NavItem: React.FC<{
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, currentView, selectedProjectId, onSelectView, isLoading, onAddProject, isAuthenticated, canEdit, onLoginRequest, onLogout }) => {
   
+  const [showCompleted, setShowCompleted] = React.useState(false);
+
   const categorizedProjects = {
     'ACTIVE PROJECTS': projects.filter(p => p.category === 'ACTIVE'),
     'MAINTENANCE / FIXES': projects.filter(p => p.category === 'MAINTENANCE'),
     'PLANNED PROJECTS': projects.filter(p => p.category === 'PLANNED'),
   };
+
+  const completedProjects = projects.filter(p => p.category === 'COMPLETED');
 
   return (
     <div className="bg-slate-800 h-full flex flex-col p-4 rounded-lg">
@@ -111,6 +115,45 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, currentView, select
                     </div>
                 )
             ))
+        )}
+        {/* Completed Projects - Collapsible */}
+        {!isLoading && completedProjects.length > 0 && (
+            <div>
+                <button
+                    onClick={() => setShowCompleted(prev => !prev)}
+                    className="w-full flex items-center justify-between px-3 mb-2 text-sm font-semibold tracking-wider text-slate-400 uppercase hover:text-slate-200 transition-colors"
+                >
+                    <span>COMPLETED</span>
+                    <span className="flex items-center gap-1">
+                        <span className="bg-slate-700 text-slate-300 text-xs rounded-full px-1.5 py-0.5">{completedProjects.length}</span>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-3.5 w-3.5 transition-transform ${showCompleted ? 'rotate-180' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
+                </button>
+                {showCompleted && (
+                    <ul className="space-y-1">
+                        {completedProjects.map(project => (
+                            <li
+                                key={project.ai_processid}
+                                onClick={() => onSelectView('project', project.ai_processid)}
+                                className={`px-3 py-2 rounded-md cursor-pointer text-base font-medium transition-colors truncate ${
+                                    selectedProjectId === project.ai_processid && currentView === 'project'
+                                    ? 'bg-cyan-600 text-white'
+                                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                }`}
+                                aria-current={selectedProjectId === project.ai_processid ? 'page' : undefined}
+                            >
+                                {project.ai_name}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         )}
       </nav>
       <div className="mt-auto">
